@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=PC GamePak
+GenericName=Cartridge Wizard
+Comment=Write a game cartridge to a removable drive
+Exec=pc-gamepak-launch
+Icon=io.github.HarryBMa.PCGamePak
+Terminal=false
+StartupNotify=true
+StartupWMClass=pc-gamepak
+Categories=Game;
+Keywords=cartridge;gamepak;steam;usb;

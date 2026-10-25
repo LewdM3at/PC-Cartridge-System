@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.HarryBMa.PCGamePak</id>
+
+  <name>PC GamePak</name>
+  <summary>Turn removable storage into physical game cartridges</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <developer id="io.github.harrybma">
+    <name>Harry Malmgren</name>
+  </developer>
+
+  <description>
+    <p>
+      PC GamePak turns a removable drive into a game cartridge. Plug it in and a
+      launcher opens showing the cover art and the games on it. Nothing runs on
+      its own: the window waits for you to press Play.
+    </p>
+    <p>
+      A cartridge is an ordinary exFAT drive with one small file at the root, so
+      the same cartridge works on Windows and Linux without conversion. Games can
+      live on the cartridge itself or be a link to one already installed through
+      Steam, Heroic, GOG or Epic.
+    </p>
+    <p>The wizard writes cartridges: pick a drive, pick games, pick artwork.</p>
+    <p>
+      Cartridges are mounted by your desktop. If yours does not mount removable
+      drives on its own, install and run something like udiskie, or nothing will
+      appear when you plug one in.
+    </p>
+  </description>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>A cartridge plugged in: the cover art, and Play</caption>
+      <image>https://raw.githubusercontent.com/HarryBMa/pc-gamepak/v1.0.1/docs/launcher.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A cartridge holding several games, with a list to pick from</caption>
+      <image>https://raw.githubusercontent.com/HarryBMa/pc-gamepak/v1.0.1/docs/launcher-bundle.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The wizard writing a cartridge: pick a game, pick a drive</caption>
+      <image>https://raw.githubusercontent.com/HarryBMa/pc-gamepak/v1.0.1/docs/wizard.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The details panel: link speed, free space, and where each game lives</caption>
+      <image>https://raw.githubusercontent.com/HarryBMa/pc-gamepak/v1.0.1/docs/launcher-details.png</image>
+    </screenshot>
+  </screenshots>
+
+  <launchable type="desktop-id">io.github.HarryBMa.PCGamePak.desktop</launchable>
+
+  <url type="homepage">https://github.com/HarryBMa/pc-gamepak</url>
+  <url type="bugtracker">https://github.com/HarryBMa/pc-gamepak/issues</url>
+  <url type="vcs-browser">https://github.com/HarryBMa/pc-gamepak</url>
+
+  <content_rating type="oars-1.1"/>
+
+  <categories>
+    <category>Game</category>
+  </categories>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="1.2.0" date="2026-10-21">
+      <description>
+        <p>A tap of an NFC card or a barcode scan can pick any game, including
+        one on another PC that starts there and streams with Moonlight when you
+        press Play. Emulated games can be made into cartridges that carry their
+        ROM. The memory card is drawn as a card, with its saves round it, and
+        the app and wizard have new icons that read at taskbar size.</p>
+      </description>
+    </release>
+    <release version="1.1.0" date="2026-10-03">
+      <description>
+        <p>Saves, playtime and compiled shaders now travel on the cartridge
+        itself, so a game carries its progress between machines. New cartridges
+        are formatted NTFS by default, because exFAT cannot hold the symlinks a
+        Proton install is built from; the picker now offers eight formats and
+        says what each one costs. A cartridge can open in the Steam Deck's
+        home screen instead of the launcher's own window, and eject now names
+        whatever is still using the drive before taking it away. A drive can
+        be a memory card that carries only saves, or a cartridge can be both.</p>
+      </description>
+    </release>
+    <release version="1.0.1" date="2026-09-06">
+      <description>
+        <p>Packaging only: the Flatpak build, and autostart through the
+        Background portal instead of a systemd user unit.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-09-05">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

@@ -1,0 +1,72 @@
+[package]
+name = "gamepak-core"
+version = "1.2.0"
+edition = "2021"
+description = "Cartridge logic shared by the launcher and the wizard, free of any UI"
+license = "MIT"
+
+# No Tauri, deliberately. Nothing here needs a webview or a display, so
+# `cargo test` runs on any machine and in CI without webkit2gtk — which is the
+# whole point of the split.
+[dependencies]
+# Only to turn chosen artwork into the .ico Explorer needs for a drive icon.
+# png+jpeg decode is the whole of it: no GIF, no WebP, no default formats. The
+# pin is exact because 0.25.10 wants rustc 1.88, and it was set while
+# rust-toolchain.toml held this repo at 1.87. The toolchain is 1.88.0 now, so the
+# pin could be relaxed; until someone does that on purpose, it stays exact so
+# `cargo update` cannot move it past whatever the next toolchain floor is.
+image = { version = "=0.25.5", default-features = false, features = ["png", "jpeg"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Random session keys for GameStream requests (moonlight.rs), and the TLS that
+# presents Moonlight's client certificate to a host. Both already in the tree
+# through ureq, so they cost lines in the lockfile and nothing else.
+getrandom = "0.2"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+ureq = { version = "2.10", features = ["json"] }
+urlencoding = "2.1"
+
+# drives.rs enumerates volumes through the Win32 API. Without this the crate
+# does not compile for Windows at all, which is how it stayed broken: CI checks
+# core on Linux only, and every Windows job failed later, in the launcher.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    # Asking a volume which bus its disk is on, so a cartridge can be told from
+    # an internal data disk that reports the same drive type.
+    "Win32_System_Ioctl",
+    "Win32_System_IO",
+    # CreateFileW's SECURITY_ATTRIBUTES parameter lives here, so the file API is
+    # not exposed without it.
+    "Win32_Security",
+    # SHChangeNotify, to tell Explorer the drive's icon has changed. Without it
+    # a rewritten cartridge keeps the icon Explorer cached the first time.
+    "Win32_UI_Shell",
+    # Asking which programs are running before a volume is taken away:
+    # CreateToolhelp32Snapshot walks the process list, and OpenProcess plus
+    # QueryFullProcessImageNameW turn a pid into the path of its executable.
+    # Both were used without being enabled, which compiles on Linux, where the
+    # whole module is behind a cfg, and fails on Windows only.
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Threading",
+    # Posting a cartridge-arrival balloon from a process with no window: the
+    # message-only window the notification area's icon belongs to, and the
+    # message pump that has to run while the balloon is up.
+    "Win32_UI_WindowsAndMessaging",
+    # How long since the last input, for the playtime tracker's idle pause:
+    # GetLastInputInfo against GetTickCount for the keyboard and mouse, and
+    # XInput for pads, which the first cannot see.
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_System_SystemInformation",
+    "Win32_UI_Input_XboxController",
+    # Ejecting, moved here from the launcher: CM_Request_Device_Eject and the
+    # SetupDi walk from a disk number to its device node, and ShellExecuteExW
+    # for the elevated retry (its info struct carries an HKEY, hence Registry).
+    "Win32_Devices_DeviceAndDriverInstallation",
+    "Win32_System_Registry",
+    # health.rs asks the hub a cartridge is plugged into what speed it
+    # negotiated: the hub's interface path from cfgmgr32, the answer from a USB
+    # IOCTL.
+    "Win32_Devices_Usb",
+] }

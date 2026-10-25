@@ -1,0 +1,209 @@
+name: release
+
+# Tags are the source of truth. Everything downstream — AUR, WinGet, Scoop —
+# keys off the artefacts and checksums this produces, so nothing else needs to
+# know how to build the project.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version to build, e.g. v1.1.0 (a dry run; nothing is published)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    name: linux build
+    # Deliberately not -latest: the oldest supported runner gives the oldest
+    # glibc, and a binary built against a newer one refuses to start on
+    # anything older.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install webkit2gtk
+        run: |
+          sudo apt-get update
+          # libpcsclite-dev: the watcher reads NFC readers through PC/SC
+          # (the pcsc crate), as CI's own install already says.
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev \
+                                  librsvg2-dev libssl-dev libayatana-appindicator3-dev \
+                                  libpcsclite-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri-ui/src-tauri
+
+      - name: Build the launcher
+        run: cargo build --release --manifest-path tauri-ui/src-tauri/Cargo.toml
+
+      # The tarball is what someone untars and runs ./linux/install.sh from, and
+      # what the AUR package builds against.
+      - name: Package
+        env:
+          # Read through the environment rather than interpolated into the
+          # script, so a dispatch input cannot become shell.
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          # A tag push takes its version from the tag. A dry run has to take it
+          # from the input: GITHUB_REF_NAME is then a branch name, and a branch
+          # name here contains a slash, which turns the staging directory into a
+          # nested path and leaves the artefact glob below matching nothing.
+          # That is what the dry run existed to catch and could not.
+          ref="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          version="${ref#v}"
+          case "$version" in
+            "" | */* | *[[:space:]]*)
+              echo "::error::'$ref' is not a tag to build. Pass one as the input, e.g. v1.1.0."
+              exit 1
+              ;;
+          esac
+          staging="pc-gamepak-${version}-linux-x86_64"
+          mkdir -p "$staging"
+          cp tauri-ui/src-tauri/target/release/pc-gamepak "$staging/"
+          # The rootless install needs the watcher; the system install ignores it.
+          cargo build --release --manifest-path watcher/Cargo.toml
+          cp watcher/target/release/pc-gamepak-watcher "$staging/"
+          cp -r linux "$staging/"
+          # Both installers look here for the icon in a tarball, and it was
+          # never shipped: `install.sh` listed it as a required file and refused
+          # to run at all from an unpacked release.
+          mkdir -p "$staging/icons"
+          cp tauri-ui/src-tauri/icons/128x128.png "$staging/icons/"
+          # No `|| true` here on purpose: it used to cover for gamepak-linux.sh,
+          # a menu wrapper that was never written, and in doing so would have
+          # hidden a missing README or LICENSE just as quietly.
+          cp cartridge.conf.example README.md LICENSE "$staging/"
+
+          # Everything install.sh and install-user.sh read out of the tarball,
+          # checked here rather than by the first person to untar it. Twice now a
+          # release has shipped without a file its own installer needed, and both
+          # times the packaging step went green.
+          for needed in \
+            pc-gamepak \
+            pc-gamepak-watcher \
+            icons/128x128.png \
+            linux/install.sh \
+            linux/install-user.sh \
+            linux/pc-gamepak.desktop \
+            linux/99-pc-gamepak.rules \
+            linux/pc-gamepak@.service \
+            linux/pc-gamepak-remove@.service \
+            linux/pc-gamepak-watcher.service \
+            linux/gamepak-launcher-helper.sh \
+            linux/gamepak-remove-helper.sh \
+            linux/eject.sh
+          do
+            if [ ! -e "$staging/$needed" ]; then
+              echo "::error::the tarball is missing $needed, which the installers read"
+              exit 1
+            fi
+          done
+
+          tar -czf "${staging}.tar.gz" "$staging"
+          sha256sum "${staging}.tar.gz" > "${staging}.tar.gz.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            pc-gamepak-*-linux-x86_64.tar.gz
+            pc-gamepak-*-linux-x86_64.tar.gz.sha256
+
+  windows:
+    name: windows build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri-ui/src-tauri
+
+      - name: Build the launcher
+        run: cargo build --release --manifest-path tauri-ui/src-tauri/Cargo.toml
+      - name: Build the watcher
+        run: cargo build --release --manifest-path watcher/Cargo.toml
+
+      - name: Package
+        shell: pwsh
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          # As in the linux job: the input is what makes a dry run build the
+          # version it says rather than the branch it ran from.
+          $ref = if ($env:INPUT_TAG) { $env:INPUT_TAG } else { $env:GITHUB_REF_NAME }
+          $version = $ref -replace '^v', ''
+          if ($version -eq '' -or $version -match '[/\s]') {
+            Write-Output "::error::'$ref' is not a tag to build. Pass one as the input, e.g. v1.1.0."
+            exit 1
+          }
+          $staging = "pc-gamepak-$version-windows-x86_64"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item tauri-ui/src-tauri/target/release/pc-gamepak.exe $staging
+          Copy-Item watcher/target/release/pc-gamepak-watcher.exe $staging
+          Copy-Item -Recurse windows $staging
+          # gamepak-windows.ps1 was listed here and has never existed. Actions
+          # runs pwsh with $ErrorActionPreference='Stop', so this one line failed
+          # the whole windows job and the tag produced no Windows artefact.
+          Copy-Item cartridge.conf.example, README.md, LICENSE $staging
+          Compress-Archive -Path $staging -DestinationPath "$staging.zip"
+          (Get-FileHash "$staging.zip" -Algorithm SHA256).Hash.ToLower() + "  $staging.zip" |
+            Out-File -Encoding ascii "$staging.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            pc-gamepak-*-windows-x86_64.zip
+            pc-gamepak-*-windows-x86_64.zip.sha256
+
+  publish:
+    name: publish the release
+    # A dry run builds both sides and stops there; only a tag publishes.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      # For the changelog. The artefacts came from the build jobs, so this is
+      # the only thing the publish step needs the tree for.
+      - uses: actions/checkout@v4
+        with:
+          path: source
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          notes=()
+          # The section for this version out of CHANGELOG.md — prose somebody
+          # wrote, rather than a list of commit subjects. Falls back to generated
+          # notes when there is no section, so a tag never fails to publish over
+          # a missing heading.
+          if awk -v v="$version" '
+                $0 ~ "^## " v "( |$)" { found = 1; next }
+                found && /^## / { exit }
+                found { print }
+              ' source/CHANGELOG.md | sed '/./,$!d' > notes.md && [ -s notes.md ]; then
+            notes=(--notes-file notes.md)
+            echo "release notes: CHANGELOG.md section for $version"
+          else
+            notes=(--generate-notes)
+            echo "release notes: generated — no CHANGELOG.md section for $version"
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            "${notes[@]}" \
+            --draft \
+            artifacts/*/*

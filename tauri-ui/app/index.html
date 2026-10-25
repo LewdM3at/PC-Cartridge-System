@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC GamePak</title>
+  <link rel="stylesheet" href="src/style.css" />
+  <!-- The skin, swapped at runtime for whichever look the cartridge asked for.
+       Empty until then: a cartridge with no opinion wears the stock one, and
+       the stylesheet for that is the one above. -->
+  <!-- The cartridge's own stylesheet, if it carries one. Inline rather than a
+       path on the drive: the backend reads it, the same way it reads the
+       artwork, so the window never opens a file itself. -->
+  <style id="cart-skin"></style>
+</head>
+<body>
+  <!--
+    The window is a slot with a cartridge seated in it. #face carries everything
+    printed on the cartridge and rides out of the slot on Eject, revealing the
+    empty #slot underneath.
+  -->
+  <main id="card" aria-labelledby="game-title">
+
+    <!-- What is behind the cartridge. Only ever seen once one has been ejected. -->
+    <div id="slot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+           stroke-linecap="round" stroke-linejoin="round" width="26" height="26"
+           aria-hidden="true">
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 7h8M8 21v-4h8v4" />
+      </svg>
+      <p id="slot-label">Slot empty</p>
+      <button id="btn-insert" type="button">Insert cartridge</button>
+    </div>
+
+    <!--
+      The first time this machine sees a cartridge: the box, the shrink-wrap
+      coming off, the lid opening, the cartridge lifted out. Played once, before
+      the cartridge seats; any key or click skips it. A skin can restyle every
+      part of it, or turn it off with `--skin-unbox: none`.
+    -->
+    <div id="unbox" hidden aria-hidden="true">
+      <div class="unbox__stage">
+        <div class="unbox__box">
+          <div class="unbox__inside">
+            <div class="unbox__cart">
+              <span class="unbox__ridges"></span>
+              <div class="unbox__label">
+                <img class="unbox__label-art" alt="" hidden />
+                <img class="unbox__logo" alt="" hidden />
+                <span class="unbox__title"></span>
+              </div>
+            </div>
+          </div>
+          <div class="unbox__lid">
+            <img class="unbox__front" alt="" hidden />
+            <span class="unbox__wrap"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--
+      The memory card: the card itself in the middle, as hardware, and every
+      save on the drive as a game case on a track round it. The chosen save
+      stands at the front; the panel under the stage says where it stands and
+      holds the one button that does what it needs. The whole window on a
+      memory card; on a combo drive, one button away from the cartridge.
+      memcard-scene.js builds the card and moves everything in 3D.
+    -->
+    <section id="memcard" hidden aria-labelledby="mc-title">
+      <header class="mc__head" data-tauri-drag-region>
+        <h1 id="mc-title" data-tauri-drag-region>Memory card</h1>
+        <button id="mc-close" class="icon-btn icon-btn--close" type="button"
+                aria-label="Close" title="Close — Esc">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="14" height="14" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+          <span class="pad-badge" aria-hidden="true">B</span>
+        </button>
+      </header>
+      <!-- How full the card is: what the saves take, and what is left. -->
+      <div class="mc__capacity" id="mc-capacity" hidden>
+        <div class="mc__bar"><i id="mc-bar-fill"></i></div>
+        <p id="mc-cap" class="mc__cap"></p>
+      </div>
+
+      <!-- The stage. The camera looks into #mc-scene; #mc-world holds the card
+           (added by script) and the track of saves. -->
+      <div id="mc-scene" class="mc__scene">
+        <div id="mc-world" class="mc__world">
+          <div class="mc__floor" aria-hidden="true"></div>
+          <ul id="mc-blocks" class="mc__track" role="listbox" aria-label="Saves"></ul>
+        </div>
+        <p id="mc-empty" class="mc__empty" hidden>No saves on this card yet.</p>
+        <button id="mc-prev" class="icon-btn mc__step mc__step--prev" type="button"
+                aria-label="Previous save" title="Previous — ←">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14"
+               aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5" /></svg>
+        </button>
+        <button id="mc-next" class="icon-btn mc__step mc__step--next" type="button"
+                aria-label="Next save" title="Next — →">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" width="14" height="14"
+               aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5" /></svg>
+        </button>
+      </div>
+
+      <!-- The chosen save: what it is, where it stands, what to do. -->
+      <footer id="mc-panel" class="mc__panel">
+        <div class="mc__title-row">
+          <h2 id="mc-game" class="mc__game"></h2>
+          <span id="mc-count" class="mc__count" aria-live="polite"></span>
+        </div>
+        <p id="mc-state" class="mc__state"></p>
+        <ul id="mc-facts" class="mc__facts"></ul>
+        <div class="mc__actions">
+          <button id="mc-to-pc" class="btn btn--primary" type="button">
+            <span class="btn__label">Copy to PC</span>
+            <span class="pad-badge" aria-hidden="true">A</span>
+          </button>
+          <button id="mc-to-card" class="btn btn--primary" type="button">
+            <span class="btn__label">Copy to card</span>
+            <span class="pad-badge" aria-hidden="true">A</span>
+          </button>
+          <div class="mc__more">
+            <button id="mc-folder" class="mc__link" type="button" title="O">Open folder</button>
+            <button id="mc-remove" class="mc__link mc__delete" type="button" title="Delete">
+              <span class="btn__label">Delete</span>
+              <span class="pad-badge" aria-hidden="true">Y</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <div id="face" data-tauri-drag-region>
+
+      <!-- The art. Two layers so a collection can cross-fade between games. -->
+      <div id="plate" aria-hidden="true">
+        <img id="cover-img" alt="" hidden />
+        <img id="cover-img-b" alt="" hidden />
+        <!--
+          What fills the frame when the picture a skin asked for is not on the
+          cartridge. The initials rather than a generic icon: a collection of
+          ten under a skin that wants heroes, with three heroes filled in, is
+          seven tiles that should still say which game each one is.
+        -->
+        <div id="cover-placeholder">
+          <p id="placeholder-initials" aria-hidden="true"></p>
+          <p id="placeholder-name"></p>
+        </div>
+      </div>
+
+      <!--
+        The skin's own layer. Empty, and empty on purpose: a stylesheet cannot
+        add elements, so without somewhere to put them a skin can only recolour
+        what is already here. Two boxes it owns outright — one over the artwork,
+        one under the controls — are enough for a CRT's knobs and its power LED,
+        or a terminal's header bar, drawn with pseudo-elements on these.
+      -->
+      <div id="skin-chrome" aria-hidden="true"></div>
+      <div id="skin-panel" aria-hidden="true"></div>
+
+      <!-- Scrims: the art is arbitrary, so the type cannot rely on it being dark. -->
+      <div id="scrim-top" aria-hidden="true"></div>
+      <div id="scrim-bottom" aria-hidden="true"></div>
+
+      <!-- A collection's logo names the cartridge, so it sits in the corner
+           rather than over the game that happens to be selected. -->
+      <img id="cart-mark" alt="" hidden />
+
+      <!-- Top chrome. Present only while the pointer is in the window. -->
+      <header id="chrome" data-tauri-drag-region>
+        <div id="chrome-actions">
+          <!-- Only on a combo drive: the same saves, as a memory card. -->
+          <button id="btn-memcard" class="icon-btn" type="button" hidden
+                  aria-label="Memory card" title="Memory card — M">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" width="14" height="14"
+                 aria-hidden="true">
+              <path d="M4 1.8h6.2L12.5 4v10.2H4z" />
+              <path d="M6 1.8v2.6M8 1.8v2.6M10 1.8v2.6" />
+              <path d="M6.2 9.4h4.1" />
+            </svg>
+            <span class="pad-badge" aria-hidden="true">View</span>
+          </button>
+          <button id="btn-details" class="icon-btn" type="button"
+                  aria-expanded="false" aria-controls="sheet"
+                  aria-label="Cartridge details" title="Details">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" width="14" height="14" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.2" />
+              <path d="M8 5.1v.1M8 7.4v3.6" />
+            </svg>
+            <!-- The one action a pad reaches by its own button rather than by focus. -->
+            <span class="pad-badge" aria-hidden="true">Y</span>
+          </button>
+          <button id="btn-close" class="icon-btn icon-btn--close" type="button"
+                  aria-label="Dismiss" title="Dismiss — Esc">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" width="14" height="14" aria-hidden="true">
+              <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- The game, and the only two things to do with it -->
+      <footer id="stage">
+        <!-- The cartridge's own name. Only a collection has one worth printing,
+             because a single game already says its name in the title. -->
+        <p id="eyebrow" hidden></p>
+
+        <!-- Collection: the rail picks which game Play acts on. It sits above
+             the title because on a collection the title names the *selected*
+             game, so the rail is what the eye should reach first. -->
+        <ul id="game-list" hidden aria-label="Games on this cartridge"></ul>
+
+        <img id="title-logo" alt="" hidden />
+        <h1 id="game-title">Reading cartridge…</h1>
+
+        <!-- How much this game has been played, and how long it takes to beat.
+             Hidden in the stock window — the details sheet says it there — and
+             here for a skin that wants it on the face: set `display` on
+             #play-stats. The same numbers are on #card as CSS variables and
+             data attributes; see docs/SKINNING.md. -->
+        <p id="play-stats" class="play-stats" aria-hidden="true">
+          <span id="play-stats-time" class="play-stats__time"></span>
+          <span id="play-stats-beat" class="play-stats__beat"></span>
+          <span id="play-stats-last" class="play-stats__last"></span>
+          <span class="play-stats__bar"><span class="play-stats__fill"></span></span>
+        </p>
+
+        <!-- The only explanation of why Play is disabled, so it is announced. -->
+        <p id="notice" role="status" hidden></p>
+
+        <div id="button-row">
+          <span id="play-ring">
+            <button id="btn-play" class="btn btn--play" type="button" disabled>
+              <span class="btn__label">Play</span>
+              <kbd class="btn__key" aria-hidden="true">&crarr;</kbd>
+              <svg class="btn__pad-icon" viewBox="0 0 16 16" fill="currentColor"
+                   width="11" height="11" aria-hidden="true">
+                <path d="M4.6 3.1l8 4.9-8 4.9z" />
+              </svg>
+              <span class="btn__sweep" aria-hidden="true"></span>
+            </button>
+          </span>
+          <button id="btn-eject" class="btn btn--eject" type="button" disabled
+                  aria-label="Eject" title="Eject — E">
+            <!-- Eject has its own face button, like the other three. -->
+            <span class="pad-badge" aria-hidden="true">X</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+                 aria-hidden="true">
+              <path d="M8 2.8L13.8 9H2.2z" />
+              <path d="M2.8 12.5h10.4" />
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Details, on request only -->
+    <aside id="sheet" hidden aria-label="Cartridge details">
+      <header id="sheet-head">
+        <h2 id="sheet-id">
+          <img id="sheet-thumb" alt="" hidden />
+          <span id="sheet-names">
+            <span id="sheet-title">Cartridge</span>
+            <span id="sheet-sub"></span>
+          </span>
+        </h2>
+        <button id="btn-sheet-close" class="icon-btn" type="button" aria-label="Close details">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="14" height="14" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+        </button>
+      </header>
+
+      <div id="sheet-body">
+        <!-- The two readings the sheet is actually opened for. -->
+        <div id="readings"></div>
+        <dl id="specs"></dl>
+
+        <!-- Paths are the least-read thing here, so they start folded. -->
+        <button id="btn-paths" class="disclosure" type="button" aria-expanded="false"
+                aria-controls="paths-fold">
+          <svg class="disclosure__caret" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+               width="11" height="11" aria-hidden="true">
+            <path d="M6 3.5L10.5 8L6 12.5" />
+          </svg>
+          <span id="paths-label">Show file paths</span>
+        </button>
+        <!-- The fold is what opens and closes; the list inside it is what gets
+             clipped while it does. A <dl> cannot do both jobs itself, because
+             the rows it animates are its own children. -->
+        <!-- The shortcuts, said once, where someone looking for more will look. -->
+        <p id="sheet-keys" class="sheet-keys"></p>
+
+        <div id="paths-fold" hidden>
+          <dl id="paths"></dl>
+        </div>
+      </div>
+
+      <footer id="sheet-footer">
+        <!-- The wizard is only reachable from here, so both ways in live
+             together: the whole wizard, and the shortcut past it to Settings.
+             Neither competes with the way out. -->
+        <button id="btn-open-wizard" class="sheet-link" type="button">
+          Cartridges and settings…
+        </button>
+      </footer>
+    </aside>
+
+    <p id="toast" role="status" aria-live="polite"></p>
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

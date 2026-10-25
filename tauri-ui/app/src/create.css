@@ -1,0 +1,3273 @@
+/* ==========================================================================
+   Create-cartridge wizard.
+
+   One screen: what to write to, what to put on it, and what it looks like,
+   with a live preview of the launcher on the right. Every switch lives in
+   Settings, so the build screen asks three questions and states three answers.
+   Selection is always multiple — one game is a cartridge, three is a
+   multicartridge, and there is no mode to enter.
+
+   The palette, the type and the buttons come from tokens.css, so this reads as
+   the same product as the popup it makes cartridges for.
+   ========================================================================== */
+
+@import "tokens.css";
+
+#shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  /* Square. A rounded corner on a transparent, undecorated window leaves a
+     wedge of nothing that Windows fills with its own border, and the two curves
+     never agree — which is the pale hook that kept appearing at every corner.
+     No radius, no wedge. */
+  border-radius: 0;
+  background: linear-gradient(180deg, oklch(0.18 0.006 65) 0%, oklch(0.145 0.005 65) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--hairline-soft),
+    inset 0 0 0 1px var(--lift),
+    0 26px 52px -18px oklch(0 0 0 / 0.8);
+  animation: shell-in 460ms var(--ease) both;
+}
+
+@keyframes shell-in {
+  from {
+    opacity: 0;
+    transform: scale(0.99) translateY(8px);
+  }
+}
+
+/* ==========================================================================
+   Title bar
+   ========================================================================== */
+
+#bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 18px;
+  border-bottom: 1px solid var(--hairline-soft);
+  background: linear-gradient(180deg, var(--lift), transparent);
+}
+
+#bar-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--text-label);
+  font-weight: 700;
+  font-stretch: 108%;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+#bar-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+/* While a cartridge is being written, the pip is the thing still moving. */
+#shell.is-running #bar-pip {
+  animation: pip 1.6s steps(1, end) infinite;
+}
+
+@keyframes pip {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0.25; }
+}
+
+#bar-actions {
+  display: flex;
+  gap: 2px;
+}
+
+#bar .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+#bar .icon-btn:hover:not(:disabled) {
+  background: var(--hairline-soft);
+  color: var(--ink);
+}
+
+.icon-btn--close:hover:not(:disabled) {
+  background: oklch(0.68 0.19 27 / 0.85);
+  color: oklch(0.98 0.01 27);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Columns
+   ========================================================================== */
+
+/* Three jobs down the left. A strip of tabs across the top had room for two;
+   the shelf made three, and a column has room for more without crowding the
+   title bar. */
+#sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 10px;
+  border-right: 1px solid var(--hairline-soft);
+  background: oklch(0 0 0 / 0.16);
+}
+
+.side-tab {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  cursor: pointer;
+  transition: color 160ms linear, background-color 160ms linear;
+}
+
+.side-tab svg {
+  flex: none;
+  opacity: 0.8;
+}
+
+.side-tab:hover {
+  color: var(--ink);
+  background: var(--lift);
+}
+
+.side-tab[aria-selected="true"] {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.side-tab[aria-selected="true"] svg {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.side-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.side-tab__count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.side-tab__count[hidden] {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 11px 14px 12px;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: color 160ms linear, background-color 160ms linear;
+}
+
+.tab:hover {
+  color: var(--ink);
+  background: oklch(1 0 0 / 0.035);
+}
+
+/* The open tab sits on the rule rather than under it. */
+.tab[aria-selected="true"] {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+#columns {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) 348px;
+  min-height: 0;
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.006), oklch(1 0 0 / 0));
+}
+
+/* The shelf is not a cartridge being built, so it has no preview: the list
+   takes the rail's width instead. */
+#columns.is-shelf {
+  grid-template-columns: 148px minmax(0, 1fr);
+}
+
+#columns.is-shelf #rail {
+  display: none;
+}
+
+#panel-create,
+#panel-edit,
+#panel-created {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* `display` on an id beats the browser's own [hidden] rule, so the panel that
+   is not open has to be told to go away in as many words. Without this the Edit
+   panel renders underneath Create, which it has been doing unnoticed because
+   the left column scrolls and nobody scrolled. */
+#panel-create[hidden],
+#panel-edit[hidden],
+#panel-created[hidden] {
+  display: none;
+}
+
+/* --- Created ------------------------------------------------------------- */
+
+#panel-created {
+  padding: 20px 20px 18px;
+  overflow-y: auto;
+  animation: rise 320ms var(--ease) both;
+}
+
+#created-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shelf-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 9px 10px 9px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--hairline-soft);
+  background: var(--well);
+}
+
+/* Plugged in right now: the one thing that changes what the row can do. */
+.shelf-row.is-here {
+  border-color: color-mix(in oklch, var(--accent) 40%, transparent);
+}
+
+.shelf-row .plate {
+  flex: none;
+  width: 40px;
+  height: 60px;
+}
+
+.shelf-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.shelf-row__title {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shelf-row__games,
+.shelf-row__meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shelf-row__meta {
+  margin-top: 2px;
+  color: var(--ink-3);
+}
+
+.shelf-row__here {
+  color: var(--good);
+}
+
+.shelf-row__forget {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.shelf-row__forget:hover {
+  color: var(--danger);
+}
+
+#created-empty[hidden] {
+  display: none;
+}
+
+#panel-edit {
+  padding: 20px 20px 18px;
+  overflow-y: auto;
+  gap: 14px;
+  animation: rise 320ms var(--ease) both;
+}
+
+#edit-drives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#edit-form-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+/* Formatting is the one setting that destroys something, so it does not look
+   like the toggles above it. */
+.opt--grave .opt__label {
+  color: var(--danger);
+}
+
+#work {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.012), transparent 70%);
+}
+
+.phase {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 20px 20px 18px;
+  animation: rise 320ms var(--ease) both;
+}
+
+/* `display` on a class the browser's [hidden] rule cannot outrank. */
+.phase[hidden] {
+  display: none;
+}
+
+/* --- Step headings ------------------------------------------------------ */
+
+.step {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.step__n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: var(--text-label);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.step__h {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  font-stretch: 108%;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: oklch(0.92 0.008 75);
+  white-space: nowrap;
+}
+
+.step__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--hairline-soft);
+}
+
+/* ==========================================================================
+   Step 1 — the library
+   ========================================================================== */
+
+.search {
+  position: relative;
+  flex: none;
+  margin-bottom: 9px;
+}
+
+.search svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ink-3);
+}
+
+#search {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--sunk);
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  padding: 9px 12px 9px 33px;
+  width: 100%;
+  outline: none;
+  transition: border-color 130ms linear;
+}
+
+#search::placeholder,
+.field input::placeholder {
+  color: var(--ink-3);
+}
+
+#search:focus,
+.field input:focus,
+.field select:focus {
+  border-color: color-mix(in oklch, var(--accent) 60%, transparent);
+}
+
+#games-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 12px;
+  background: linear-gradient(180deg, oklch(0 0 0 / 0.18), oklch(0 0 0 / 0.12));
+  box-shadow: inset 0 1px 0 var(--lift);
+  overflow: hidden;
+}
+
+#games {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--lift);
+  cursor: pointer;
+  transition: background-color 110ms linear;
+}
+
+#games li:last-child .game {
+  border-bottom: 0;
+}
+
+.game:hover {
+  background: oklch(1 0 0 / 0.03);
+}
+
+.game input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.game__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game__meta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+/* A game that is not installed locally has no size to report. */
+.game__meta .is-unknown {
+  opacity: 0.45;
+}
+
+.game__meta::before {
+  content: none;
+}
+
+.game__divider {
+  width: 1px;
+  height: 9px;
+  background: oklch(1 0 0 / 0.16);
+}
+
+/* Ticked. A colour bar rather than a fill, so the row text keeps contrast. */
+.game.is-on {
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.game.is-on .game__name {
+  font-weight: 600;
+}
+
+.game.is-on .game__meta {
+  color: var(--ink-2);
+}
+
+#games-empty {
+  margin: 0;
+  padding: 16px 14px;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+#games-foot {
+  flex: none;
+  margin: 0;
+  padding: 9px 14px;
+  border-top: 1px solid var(--lift);
+  background: var(--well);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.link {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  /* Every link here is a secondary action beside something larger: Rescan,
+     Clear, Cancel, Refetch. At the body size they outweighed the controls
+     they sit next to. */
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: oklch(1 0 0 / 0.28);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 130ms linear;
+}
+
+.link:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+/* The artwork group's two actions, a little apart from the slots above. */
+#btn-remove-logo,
+#btn-refetch-art {
+  margin: 10px 16px 0 0;
+}
+
+/* ==========================================================================
+   Fields
+   ========================================================================== */
+
+.field {
+  display: block;
+}
+
+.field + .field {
+  margin-top: 12px;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.field input,
+.field select {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--sunk);
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  padding: 9px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color 130ms linear;
+}
+
+/* The one field a phase is about gets the size to say so. */
+.field__input--lead {
+  font-size: 17px !important;
+  font-weight: 600;
+  padding: 11px 13px !important;
+  border-color: color-mix(in oklch, var(--accent) 50%, transparent) !important;
+}
+
+.hint {
+  margin: 9px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: oklch(0.64 0.008 75);
+}
+
+.hint code,
+.opt__hint code {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  color: var(--ink-soft);
+}
+
+.hint--warn,
+.hint--danger {
+  color: color-mix(in oklch, var(--danger) 70%, var(--ink));
+}
+
+.hint--warn svg,
+.hint--danger svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.folder-pick {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.folder-pick input {
+  flex: 1;
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.btn--quiet {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 5px;
+  background: var(--lift);
+  color: oklch(0.9 0.008 75);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  transition: border-color 160ms linear, background-color 160ms linear;
+}
+
+.btn--quiet:hover:not(:disabled) {
+  border-color: oklch(1 0 0 / 0.3);
+  background: var(--hairline-soft);
+}
+
+.btn--quiet:disabled {
+  cursor: not-allowed;
+  color: var(--ink-3);
+  border-color: var(--hairline-soft);
+}
+
+/* ==========================================================================
+   Plates — cover art, wherever it is shown
+   ========================================================================== */
+
+.plate {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--sunk);
+  box-shadow:
+    inset 0 0 0 1px oklch(0 0 0 / 0.6),
+    0 6px 16px -8px oklch(0 0 0 / 0.75);
+}
+
+.plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.plate img[hidden] {
+  display: none;
+}
+
+/* No art at all — and for a collection that is the normal state, not a fault. */
+.plate--empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+  background: repeating-linear-gradient(
+    135deg,
+    oklch(0.2 0.005 65) 0 6px,
+    oklch(0.17 0.005 65) 6px 12px
+  );
+  color: oklch(0.5 0.008 75);
+}
+
+.plate--empty p {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Once there is art, the hatching and its label have nothing to say. */
+.plate.has-art {
+  background: var(--sunk);
+}
+
+.plate.has-art svg,
+.plate.has-art p {
+  display: none;
+}
+
+/* ==========================================================================
+   Step 1b — a game nothing scanned
+   ========================================================================== */
+
+#custom-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 154px 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+#custom-art .plate {
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px oklch(0 0 0 / 0.6),
+    0 10px 26px -12px oklch(0 0 0 / 0.85);
+}
+
+#custom-art .btn {
+  width: 100%;
+  margin-top: 9px;
+  justify-content: center;
+}
+
+#custom-fields {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* A field after a hint, shown or hidden, is not `.field + .field`, and would
+   sit flush against the hint above it. */
+#custom-fields > .field:not(:first-child) {
+  margin-top: 12px;
+}
+
+/* Ranked: what a person is most likely to have meant, first. */
+#exe-choices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+}
+
+.exe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  background: var(--well);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms linear, background-color 160ms linear;
+}
+
+.exe:hover {
+  border-color: var(--hairline);
+}
+
+.exe[aria-pressed="true"] {
+  border-color: color-mix(in oklch, var(--accent) 60%, transparent);
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+
+.exe__name {
+  flex: 1;
+  min-width: 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Helper runtimes and uninstallers are pushed down, and say why. */
+.exe__why {
+  flex: none;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+.exe.is-demoted .exe__name {
+  color: oklch(0.7 0.008 75);
+}
+
+#order {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+#order-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--well);
+  font-size: 12.5px;
+  cursor: grab;
+}
+
+.order-row.is-dragging {
+  opacity: 0.4;
+}
+
+.order-row.is-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.order-row__n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--accent) 20%, transparent);
+  color: color-mix(in oklch, var(--accent) 80%, var(--ink));
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.order-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-row__size {
+  flex: none;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+/* The poster this game gets on the launcher, at the proportions it will have
+   there: box art, taller than it is wide. */
+.order-row__art {
+  flex: none;
+  display: block;
+  width: 20px;
+  height: 30px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: oklch(0 0 0 / 0.45);
+}
+
+.order-row__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.order-row__art.is-empty {
+  border: 1px dashed oklch(0.42 0.008 75);
+}
+
+/* The controls on a row are pictures: a grip that says it moves, a frame for
+   the poster, a cross to take it off. A row is a game and three verbs; spelling
+   the verbs out made every row a sentence. */
+.row-btn {
+  flex: none;
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: oklch(0 0 0 / 0.4);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 160ms linear, color 160ms linear, border-color 160ms linear;
+}
+
+.row-btn:hover {
+  background: color-mix(in oklch, var(--accent) 26%, transparent);
+  color: var(--ink);
+}
+
+.row-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* A poster that has been chosen, so the row says which ones still need one. */
+.row-btn.is-set {
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
+  color: color-mix(in oklch, var(--accent) 80%, white);
+}
+
+.row-btn--danger:hover {
+  background: color-mix(in oklch, var(--danger) 30%, transparent);
+  color: oklch(0.98 0.01 27);
+}
+
+/* The handle. Dim until the row is under the pointer — it is an affordance,
+   not a thing to read. */
+.order-row__grip {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: oklch(0.44 0.006 65);
+  cursor: grab;
+  transition: color 160ms linear;
+}
+
+.order-row:hover .order-row__grip {
+  color: var(--ink-2);
+}
+
+/* ==========================================================================
+   Step 3 — options, grouped by what they touch
+   ========================================================================== */
+
+#options {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.group {
+  margin: 0 0 9px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.group__body {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.opt {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.opt[hidden] {
+  display: none;
+}
+
+.opt input {
+  width: 14px;
+  height: 14px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.opt__body {
+  display: block;
+  min-width: 0;
+}
+
+.opt__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.opt__hint {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: oklch(0.64 0.008 75);
+}
+
+/* ==========================================================================
+   Writing — the same window, running
+   ========================================================================== */
+
+#running-phase {
+  margin-bottom: 6px;
+}
+
+#running-title {
+  margin: 0 0 18px;
+  font-size: 26px;
+  font-weight: 800;
+  font-stretch: 96%;
+  line-height: 1.02;
+  letter-spacing: -0.016em;
+}
+
+#running-figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.figure__label {
+  margin: 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.figure__value {
+  margin: 6px 0 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.figure__unit {
+  font-size: 12px;
+  color: oklch(0.66 0.008 75);
+}
+
+#progress-track {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  border-radius: 3px;
+  background: oklch(0 0 0 / 0.5);
+  box-shadow: inset 0 0 0 1px var(--hairline-soft);
+  overflow: hidden;
+}
+
+/* Scaled rather than widened. This is the one bar that moves continuously —
+   every progress event over a copy that can run for minutes — and animating
+   width relayouts the track on each one. */
+#progress-fill {
+  height: 100%;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--accent);
+  transition: transform 200ms linear;
+}
+
+/* A step with no byte count still needs to look alive. The sweep's keyframes
+   replace the transform entirely, which is why the identity scale here matters
+   only when the animation is off. */
+#progress-fill.is-indeterminate {
+  transform: scaleX(1);
+  animation: sweep 1100ms ease-in-out infinite;
+}
+
+@keyframes sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* With the sweep off, an indeterminate bar would scale to nothing and read
+     as a stalled build. It fills instead, dimmed, and the text carries it. */
+  #progress-fill.is-indeterminate {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
+#running-rate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 9px 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+#current-file {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: right;
+}
+
+#log-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+#log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.log-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.log-row__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 1px solid oklch(1 0 0 / 0.14);
+  color: transparent;
+}
+
+.log-row.is-done {
+  color: oklch(0.82 0.008 75);
+}
+
+.log-row.is-done .log-row__mark {
+  border-color: transparent;
+  background: color-mix(in oklch, var(--good) 80%, transparent);
+  color: oklch(0.14 0.02 145);
+}
+
+.log-row.is-now {
+  color: var(--ink);
+}
+
+.log-row.is-now .log-row__mark {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 3px color-mix(in oklch, var(--accent) 55%, transparent);
+}
+
+/* ==========================================================================
+   The rail
+   ========================================================================== */
+
+#rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px;
+  border-left: 1px solid var(--hairline-soft);
+  background: linear-gradient(180deg, var(--lift), oklch(0 0 0 / 0.12));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#rail-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  text-align: center;
+  color: oklch(0.4 0.008 65);
+}
+
+#rail-empty p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 215px;
+}
+
+#rail-empty[hidden],
+#rail-body[hidden] {
+  display: none;
+}
+
+/* Cartridge, or Multicartridge — the panel titles itself to match the tick
+   count, so there is never a mode to be in. */
+#rail-kind {
+  margin: 0 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pill {
+  padding: 2px 5px 1px;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--accent) 18%, transparent);
+  color: color-mix(in oklch, var(--accent) 80%, var(--ink));
+  letter-spacing: 0.12em;
+}
+
+.pill[hidden] {
+  display: none;
+}
+
+/* --- The launcher preview ----------------------------------------------- */
+
+#rail-launcher {
+  margin-top: 14px;
+}
+
+/* The card is built at the launcher's real 420x560 and scaled down, so every
+   size inside it is the size the launcher actually uses — no second set of
+   numbers to keep in step with the real window. The frame reserves the scaled
+   footprint, since a transform does not affect layout. */
+/* Capped rather than full-bleed. At the rail's full width the preview is over
+   400px tall and pushes the capacity bar, the drive and the button that starts
+   the write below the fold — a preview that hides the thing it is previewing
+   the result of. This is large enough to read the title against the art, which
+   is the whole job. */
+#rail-launcher-frame {
+  width: 100%;
+  max-width: 128px;
+  aspect-ratio: 420 / 560;
+  overflow: hidden;
+  border-radius: 11px;
+}
+
+#rail-launcher-card {
+  position: relative;
+  width: 420px;
+  height: 560px;
+  transform: scale(var(--rail-scale, 0.7));
+  transform-origin: top left;
+  overflow: hidden;
+  border-radius: 16px;
+  background: oklch(0.115 0.004 65);
+  box-shadow:
+    inset 0 0 0 1px var(--hairline-mid),
+    0 14px 30px -12px oklch(0 0 0 / 0.8);
+}
+
+#rail-launcher-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+#rail-launcher-art[hidden] {
+  display: none;
+}
+
+#rail-launcher-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: oklch(0.42 0.006 65);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel) 0 10px,
+    var(--shell) 10px 20px
+  );
+}
+
+#rail-launcher-card.has-art #rail-launcher-empty {
+  display: none;
+}
+
+#rail-launcher-scrim {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 52%;
+  background: linear-gradient(
+    to top,
+    oklch(0.09 0.004 65 / 0.98) 0%,
+    oklch(0.09 0.004 65 / 0.9) 22%,
+    oklch(0.1 0.004 65 / 0.58) 48%,
+    transparent 100%
+  );
+}
+
+#rail-launcher-stage {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0 20px 20px;
+}
+
+/* As the launcher prints it: the collection's name in the corner, where its
+   logo would go. The card is transformed, so fixed positions against it. */
+#rail-launcher-eyebrow {
+  position: fixed;
+  top: 17px;
+  left: 20px;
+  z-index: 3;
+  max-width: 62%;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-stretch: 104%;
+  line-height: 1.2;
+  color: var(--ink);
+  text-shadow: 0 1px 12px oklch(0 0 0 / 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#rail-launcher-eyebrow[hidden] {
+  display: none;
+}
+
+#rail-launcher-logo {
+  display: block;
+  max-width: min(88%, 360px);
+  max-height: 78px;
+  margin: 0 0 8px;
+  object-fit: contain;
+  object-position: left bottom;
+  filter: drop-shadow(0 2px 10px oklch(0 0 0 / 0.52));
+}
+
+#rail-launcher-logo[hidden] {
+  display: none;
+}
+
+/* A logo prints the name in the artwork, so the heading would say it twice. */
+#rail-launcher-stage.has-logo #rail-launcher-title {
+  display: none;
+}
+
+#rail-launcher-title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  font-stretch: 84%;
+  line-height: 0.9;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: oklch(0.97 0.006 75);
+  text-shadow: 0 2px 14px oklch(0 0 0 / 0.6);
+}
+
+#rail-launcher-title.is-long {
+  font-size: 30px;
+  font-stretch: 76%;
+  line-height: 0.96;
+}
+
+#rail-launcher-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+#rail-launcher-play {
+  flex: 1;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.3);
+}
+
+#rail-launcher-eject {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 7px;
+  border: 1px solid oklch(1 0 0 / 0.15);
+  background: oklch(0.1 0.004 65 / 0.4);
+  color: oklch(0.88 0.008 75);
+}
+
+/* --- In Explorer --------------------------------------------------------- */
+
+#rail-explorer {
+  margin-top: 14px;
+}
+
+#rail-explorer[hidden] {
+  display: none;
+}
+
+#rail-explorer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--hairline-soft);
+  background: var(--well);
+}
+
+#rail-explorer-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+}
+
+#rail-explorer-icon.is-blank {
+  background: var(--hairline-soft);
+}
+
+#rail-explorer-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#rail-explorer-free {
+  flex: none;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+/* --- Change ------------------------------------------------------------- */
+
+/* Quiet by default: what is chosen matters more than the means of changing it,
+   right up until someone wants to change it. */
+.change-btn {
+  appearance: none;
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--lift);
+  color: oklch(0.9 0.008 75);
+  cursor: pointer;
+  transition: background 160ms linear, border-color 160ms linear;
+}
+
+.change-btn:hover {
+  background: var(--hairline-mid);
+  border-color: oklch(1 0 0 / 0.2);
+}
+
+/* The label carries its own bottom margin; in this row the flexbox owns the
+   spacing instead, or the button sits off the label's baseline. */
+.rail-drives__head .field__label {
+  margin-bottom: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- What it costs on the drive ----------------------------------------- */
+
+#rail-space {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+#rail-space[hidden] {
+  display: none;
+}
+
+.rail-space__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+#rail-drive-label {
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+#rail-drive-fill {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  color: oklch(0.74 0.008 75);
+}
+
+/* One band per game, so it is visible which one is taking the room.
+   A grid rather than a flex row, and the *tracks* are what move: the bands are
+   siblings that have to push each other along, so a transform would overlap
+   them instead, and animating each child's own width runs a layout pass per
+   band. One property on the container does the same job once.
+
+   The tracks are percentages of the whole drive and are not stretched, so the
+   gap at the end is the free space — which is the thing the bar is for. A
+   browser that will not interpolate grid-template-columns snaps to the new
+   sizes, which is exactly what no transition would have done. */
+#rail-bar {
+  display: grid;
+  justify-content: start;
+  gap: 2px;
+  height: 6px;
+  border-radius: 3px;
+  background: oklch(0 0 0 / 0.5);
+  overflow: hidden;
+  transition: grid-template-columns 200ms linear;
+}
+
+/* Over the drive's capacity: the bar says so before the button refuses. */
+#rail-bar.is-over div {
+  background: var(--danger) !important;
+}
+
+#drives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 132px;
+  overflow-y: auto;
+}
+
+.drive {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  background: var(--well);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms linear, background-color 160ms linear;
+}
+
+.drive:hover {
+  border-color: var(--hairline);
+}
+
+.drive[aria-selected="true"] {
+  border-color: color-mix(in oklch, var(--accent) 60%, transparent);
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+
+.drive__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drive__meta {
+  flex: none;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+/* A drive that already holds a cartridge: not an error, but worth saying. */
+.drive__warn {
+  color: color-mix(in oklch, var(--accent) 80%, var(--ink));
+}
+
+/* --- The plan ----------------------------------------------------------- */
+
+#rail-plan,
+#rail-forced {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+#rail-plan[hidden],
+#rail-forced[hidden] {
+  display: none;
+}
+
+#plan {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  counter-reset: plan;
+}
+
+.plan-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.plan-row__n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--hairline-soft);
+  color: var(--ink-2);
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+
+.plan-row--danger .plan-row__n {
+  background: color-mix(in oklch, var(--danger) 24%, transparent);
+  color: color-mix(in oklch, var(--danger) 76%, var(--ink));
+}
+
+.plan-row__what {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.plan-row__detail {
+  display: block;
+  margin-top: 2px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+#forced {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.forced-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.forced-row__mark {
+  flex: none;
+  width: 12px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  color: color-mix(in oklch, var(--good) 76%, var(--ink));
+}
+
+.forced-row.is-off {
+  color: var(--ink-3);
+}
+
+.forced-row.is-off .forced-row__mark {
+  color: var(--ink-3);
+}
+
+/* --- The rail's footer -------------------------------------------------- */
+
+/* Sticky, not merely last. The rail scrolls now that it carries a preview, and
+   the button that starts the write is the one thing that must never be the
+   reason someone has to scroll. The negative bottom margin cancels the rail's
+   own padding so the backing reaches the window edge rather than leaving a
+   scrolling sliver under it. */
+#rail-foot {
+  flex: none;
+  margin-top: auto;
+  padding-top: 17px;
+  position: sticky;
+  bottom: -20px;
+  margin-bottom: -20px;
+  padding-bottom: 20px;
+  background: linear-gradient(
+    to top,
+    oklch(0.145 0.005 65) 72%,
+    oklch(0.145 0.005 65 / 0.92) 88%,
+    transparent 100%
+  );
+}
+
+#ready-message {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: oklch(0.8 0.008 75);
+}
+
+/* The dot is the state: accent when ready, danger when something will be
+   erased, nothing at all when there is not yet anything to write. */
+#ready-message.is-ready::before,
+#ready-message.is-destructive::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+#ready-message.is-destructive {
+  color: color-mix(in oklch, var(--danger) 62%, var(--ink));
+}
+
+#ready-message.is-destructive::before {
+  background: var(--danger);
+}
+
+#rail-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+#btn-create {
+  flex: 1;
+  height: 46px;
+  border-radius: 6px;
+}
+
+#status {
+  margin: 12px 0 0;
+  min-height: 1.4em;
+  font-size: var(--text);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+#status:empty {
+  margin: 0;
+  min-height: 0;
+}
+
+#status.is-error {
+  color: color-mix(in oklch, var(--danger) 78%, var(--ink));
+}
+
+#status.is-good {
+  color: color-mix(in oklch, var(--good) 72%, var(--ink));
+}
+
+/* ==========================================================================
+   Dialogs
+   ========================================================================== */
+
+dialog {
+  width: min(660px, 92vw);
+  max-height: 86vh;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--hairline-soft),
+    0 30px 60px -20px oklch(0 0 0 / 0.8);
+  overflow: hidden;
+}
+
+dialog::backdrop {
+  background: oklch(0.08 0.004 65 / 0.66);
+}
+
+dialog form {
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  padding: 16px 20px 20px;
+  overflow: hidden;
+}
+
+.dialog-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 13px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-stretch: 104%;
+  letter-spacing: -0.014em;
+}
+
+.dialog-head .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--lift);
+}
+
+.dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.dialog-actions {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.rescan {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rescan .hint {
+  margin: 0;
+}
+
+#edit-games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* One game on a cartridge being edited. These carried "rail-" names because the
+   rail used to list games too; it does not any more, and Edit is the only place
+   that builds them. */
+.edit-game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 7px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 7px;
+  background: var(--well);
+}
+
+.edit-game__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Change game / Change media ----------------------------------------- */
+
+#pick-dialog {
+  width: min(520px, 92vw);
+}
+
+/* --- The artwork picker ------------------------------------------------- */
+
+#sgdb-dialog {
+  width: min(840px, 94vw);
+}
+
+#sgdb-tabs {
+  flex: none;
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+/* `display: flex` outranks the browser's own [hidden] rule, so hiding the tabs
+   for a single game's poster needs saying here. */
+#sgdb-tabs[hidden] {
+  display: none;
+}
+
+.tab {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background-color 180ms linear, color 180ms linear,
+    box-shadow 180ms linear;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 50%, transparent);
+  color: color-mix(in oklch, var(--accent) 76%, var(--ink));
+}
+
+#sgdb-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 232px;
+  gap: 22px;
+}
+
+#sgdb-picker {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+#sgdb-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.art-card {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--hairline-mid);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--well);
+  cursor: pointer;
+  transition: border-color 180ms linear, box-shadow 180ms linear;
+}
+
+.art-card:hover {
+  border-color: oklch(1 0 0 / 0.24);
+}
+
+.art-card[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);
+}
+
+.art-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.art-card__meta {
+  display: block;
+  padding: 5px 7px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+/* The receipt: a line of type, not a wizard page. */
+#ico-receipt {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: color-mix(in oklch, var(--good) 70%, var(--ink));
+}
+
+#ico-receipt[hidden] {
+  display: none;
+}
+
+/* --- The launcher preview ----------------------------------------------- */
+
+#sgdb-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pv {
+  cursor: pointer;
+}
+
+.pv .field__label {
+  margin-bottom: 5px;
+  transition: color 160ms linear;
+}
+
+.pv__frame {
+  border-radius: 6px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 160ms linear;
+}
+
+.pv:hover .pv__frame {
+  outline-color: var(--hairline);
+}
+
+/* The one the open tab is choosing. */
+.pv.is-active .pv__frame {
+  outline-color: var(--accent);
+}
+
+.pv.is-active .field__label {
+  color: color-mix(in oklch, var(--accent) 80%, var(--ink));
+}
+
+/* SteamGridDB heroes are 1920×620. */
+#preview-hero {
+  position: relative;
+  aspect-ratio: 96 / 31;
+  width: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel) 0 7px,
+    var(--shell) 7px 14px
+  );
+}
+
+#preview-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#preview-hero img[hidden] {
+  display: none;
+}
+
+.pv__empty {
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+#preview-art {
+  position: relative;
+  /* The launcher is a cover-shaped 3:4 preview, not a library thumbnail. */
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--sunk);
+  box-shadow:
+    inset 0 0 0 1px oklch(0 0 0 / 0.6),
+    0 8px 20px -10px oklch(0 0 0 / 0.8);
+}
+
+#preview-grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 320ms var(--ease);
+}
+
+#preview-grid[hidden],
+#preview-logo[hidden] {
+  display: none;
+}
+
+#preview-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--panel) 0 7px,
+    var(--shell) 7px 14px
+  );
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+}
+
+#preview-art.has-art #preview-empty {
+  display: none;
+}
+
+#preview-stage {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 40px 11px 11px;
+  background: linear-gradient(to top, oklch(0.07 0.004 65 / 0.96), transparent);
+}
+
+#preview-logo {
+  display: block;
+  max-width: 78%;
+  max-height: 34px;
+  width: auto;
+  margin: 0 0 5px;
+  object-fit: contain;
+  object-position: left bottom;
+}
+
+#preview-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  font-stretch: 88%;
+  line-height: 0.98;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* The logo replaces the title, exactly as the launcher does. */
+#preview-stage.has-logo #preview-title {
+  display: none;
+}
+
+#preview-actions {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+#preview-actions span {
+  flex: 1;
+  padding: 5px 4px;
+  border: 1px solid oklch(1 0 0 / 0.2);
+  border-radius: 3px;
+  font-size: 7px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#preview-actions span:first-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+#preview-actions span:last-child {
+  flex: none;
+  width: 26px;
+}
+
+/* The launcher and the icon side by side, so all four fit without scrolling. */
+.pv-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+#preview-icon-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px;
+}
+
+#preview-icon-row .hint {
+  margin: 0;
+}
+
+#preview-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  aspect-ratio: auto;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+}
+
+/* ==========================================================================
+   The build screen
+
+   One page: what game, what it goes on, what it looks like, what gets written.
+   Each group is a label and a card, and each card states the current answer
+   with the way to change it sitting next to it — so nothing has to be finished
+   before the next thing can be looked at.
+   ========================================================================== */
+
+#step-build {
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.build-group {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Same trap as the panels: a class that sets display outranks [hidden]. */
+.build-group[hidden] {
+  display: none;
+}
+
+.build-label {
+  margin: 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.build-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--well);
+}
+
+/* Nothing chosen yet is a gap to fill, not a thing that exists — so the border
+   is the dashed one an empty slot has everywhere else in this window. */
+#build-game:has(#build-game-title:empty),
+#step-build:not(.has-game) #build-game {
+  border-style: dashed;
+  border-color: oklch(1 0 0 / 0.17);
+  background: oklch(0 0 0 / 0.2);
+}
+
+#build-game-plate {
+  flex: none;
+  width: 42px;
+  height: 63px;
+  border-radius: 5px;
+}
+
+#build-media-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: var(--hairline-soft);
+  color: oklch(0.82 0.008 75);
+}
+
+.build-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.build-card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  font-stretch: 92%;
+  letter-spacing: -0.012em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.build-card__meta {
+  margin: 0;
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+/* --- Artwork slots ------------------------------------------------------- */
+
+.art-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.art-slot {
+  appearance: none;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border-radius: 9px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--well);
+  cursor: pointer;
+  transition: border-color 160ms linear, background 160ms linear;
+}
+
+.art-slot:hover {
+  border-color: oklch(1 0 0 / 0.22);
+  background: oklch(0 0 0 / 0.34);
+}
+
+.art-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.art-slot__art {
+  display: block;
+  position: relative;
+  height: 52px;
+  background: oklch(0 0 0 / 0.32);
+}
+
+/* A logo is usually pale and usually transparent, so it needs something behind
+   it that is neither. */
+.art-slot__art--check {
+  background: repeating-conic-gradient(
+      oklch(0.22 0.004 65) 0% 25%,
+      oklch(0.17 0.004 65) 0% 50%
+    )
+    0 0 / 12px 12px;
+}
+
+.art-slot__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.art-slot__art img[hidden] {
+  display: none;
+}
+
+/* The filename line under this used to carry the bottom padding. */
+.art-slot__name {
+  display: block;
+  padding: 7px 9px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* --- The picker's two panes ---------------------------------------------- */
+
+#pick-dialog {
+  width: min(560px, 92vw);
+}
+
+#pick-games .search {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#pick-games #tick-count {
+  flex: none;
+  padding-left: 12px;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+#pick-games #games-wrap,
+#pick-media {
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+}
+
+/* Collection name and play order, inline under the Games card. A placeholder
+   does the labelling: a field captioned "Collection name" containing a
+   collection name is the same word twice. */
+#build-name {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+#build-name[hidden] {
+  display: none;
+}
+
+#build-name #collection-title {
+  width: 100%;
+}
+
+#edit-games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+#panel-edit {
+  gap: 18px;
+}
+
+/* The grid keeps its shape when a slot goes: three slots, three columns. */
+/* However many slots are showing share the row: a collection hides two. */
+.art-slots:has(.art-slot[hidden]) {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+}
+
+.art-slot[hidden] {
+  display: none;
+}
+
+/* A volume with no drive letter. Dashed, because it is an outline of a drive
+   rather than one: it cannot be written to until it has been given a letter,
+   and clicking it asks Windows for one instead of selecting it. */
+.drive--unmounted {
+  border-style: dashed;
+}
+
+/* The commands a tuning run would execute, printed before it runs. Monospace
+   and wrapped rather than scrolled: this is the thing the user is being asked
+   to agree to, so none of it should be off the edge of the box. */
+.tune-plan {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  list-style: none;
+  border: 1px solid var(--hairline-mid);
+  border-radius: 8px;
+  background: var(--well);
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.tune-plan li + li {
+  margin-top: 6px;
+}
+
+.tune-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Indented under the switch it belongs to, so it reads as that switch's
+   "and do it now" rather than as another setting of its own. */
+.tune-now {
+  margin: -4px 0 4px 30px;
+}
+
+
+/* --- Front-ends -----------------------------------------------------------
+   One switch per place a cartridge can open. Built at runtime from what the
+   backend knows, so this only has to lay the rows out. */
+
+.frontends {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.frontends .opt input:disabled + .opt__body .opt__label {
+  opacity: 0.55;
+}
+
+/* --- Fields that are not inside a .field ---------------------------------
+   The collection name and the Edit tab's name sit on their own, and without
+   this they fell through to the browser's white text box. */
+input.field__input--lead {
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--sunk);
+  border: 1px solid var(--hairline-soft);
+  border-radius: 6px;
+  width: 100%;
+  outline: none;
+  transition: border-color 130ms linear;
+}
+
+input.field__input--lead:focus {
+  border-color: var(--accent) !important;
+}
+
+/* --- Options: this cartridge's switches -------------------------------- */
+
+.toggles {
+  display: flex;
+  flex-direction: column;
+  border-radius: 11px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--well);
+  overflow: hidden;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.toggle + .toggle {
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.toggle[hidden] {
+  display: none;
+}
+
+.toggle__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  align-self: stretch;
+  cursor: pointer;
+}
+
+.toggle__label {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.toggle__meta {
+  flex: none;
+  font-size: var(--text-label);
+  color: var(--ink-3);
+}
+
+.toggle.is-off .toggle__main {
+  cursor: default;
+}
+
+.toggle.is-off .toggle__label {
+  color: var(--ink-3);
+}
+
+/* A switch, drawn from the checkbox so it stays a checkbox to a screen
+   reader, a keyboard and the form. */
+.toggle input[type="checkbox"] {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 0.14);
+  cursor: pointer;
+  transition: background 140ms linear;
+}
+
+.toggle input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: oklch(0.92 0.006 75);
+  transition: transform 160ms var(--ease, ease);
+}
+
+.toggle input[type="checkbox"]:checked {
+  background: var(--accent);
+}
+
+.toggle input[type="checkbox"]:checked::after {
+  transform: translateX(12px);
+  background: oklch(0.16 0.006 65);
+}
+
+.toggle input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toggle input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.toggle--danger input[type="checkbox"]:checked {
+  background: var(--danger);
+}
+
+.toggle--danger.is-on {
+  background: color-mix(in oklch, var(--danger) 10%, transparent);
+}
+
+.toggle--danger.is-on .toggle__label {
+  color: color-mix(in oklch, var(--danger) 70%, var(--ink));
+}
+
+.toggle__select {
+  flex: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink);
+  background: var(--sunk);
+  border: 1px solid var(--hairline-mid);
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.toggle__select[hidden] {
+  display: none;
+}
+
+/* --- Erase confirmation ------------------------------------------------ */
+
+#confirm-dialog {
+  width: min(400px, 92vw);
+}
+
+.confirm-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.btn--danger {
+  background: var(--danger) !important;
+  color: oklch(0.16 0.006 65) !important;
+}
+
+[hidden].opt__hint {
+  display: none;
+}
+
+.custom-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* `.field` sets display, which outranks the browser's own [hidden]. */
+.field[hidden] {
+  display: none;
+}
+
+/* --- Memory card --------------------------------------------------------- */
+
+#panel-memcard,
+#panel-actions {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 14px;
+  padding: 20px 20px 18px;
+  overflow-y: auto;
+  animation: rise 320ms var(--ease) both;
+}
+
+#panel-memcard[hidden],
+#panel-actions[hidden] {
+  display: none;
+}
+
+/* --- GamePak actions ------------------------------------------------------ */
+
+.gp-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.gp-view[hidden] {
+  display: none;
+}
+
+.gp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#gp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gp-row {
+  align-items: flex-start;
+  padding: 11px 10px 11px 14px;
+}
+
+.gp-row .change-btn,
+.gp-row .shelf-row__forget {
+  align-self: center;
+}
+
+.gp-row.is-listening {
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
+}
+
+.gp-row.is-confirming {
+  border-color: color-mix(in oklch, var(--danger) 55%, transparent);
+}
+
+.gp-row.is-confirming .shelf-row__games,
+.gp-row.is-confirming .shelf-row__forget {
+  color: var(--danger);
+}
+
+.gp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+/* A card or barcode that starts this GamePak. */
+.gp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--lift);
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.gp-chip--none {
+  border-style: dashed;
+  color: var(--ink-3);
+}
+
+.gp-chip__off {
+  appearance: none;
+  border: 0;
+  padding: 0 0 0 2px;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gp-chip__off:hover {
+  color: var(--danger);
+}
+
+.gp-empty {
+  padding: 28px 20px;
+  border: 1px dashed var(--hairline);
+  border-radius: 11px;
+  text-align: center;
+}
+
+.gp-empty[hidden] {
+  display: none;
+}
+
+.gp-empty__title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+#gp-form .mcw-foot {
+  justify-content: flex-end;
+}
+
+#gp-form-status {
+  flex: 1;
+  margin: 0;
+}
+
+.gp-step {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Listening for a tap or a scan; it starts the moment the form opens. */
+.gp-listen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px 10px 16px;
+  border: 1px dashed var(--hairline);
+  border-radius: 11px;
+  background: var(--well);
+}
+
+.gp-listen__mark {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: gp-pulse 1.4s var(--ease) infinite;
+}
+
+.gp-listen__text {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.gp-listen[data-state="learned"] {
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--good) 50%, transparent);
+}
+
+.gp-listen[data-state="learned"] .gp-listen__mark {
+  background: var(--good);
+  animation: none;
+}
+
+.gp-listen[data-state="learned"] .gp-listen__text {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+@keyframes gp-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 60%, transparent); }
+  70%  { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-listen__mark {
+    animation: none;
+  }
+}
+
+.gp-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.gp-kind {
+  appearance: none;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--hairline-mid);
+  border-radius: 8px;
+  background: var(--lift);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gp-kind:hover {
+  border-color: var(--hairline);
+  color: var(--ink);
+}
+
+.gp-kind[aria-checked="true"] {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  color: var(--ink);
+}
+
+.gp-ml {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.gp-ml[hidden],
+.gp-ml [hidden] {
+  display: none;
+}
+
+.gp-ml .mcw-search,
+#gp-ml-results {
+  align-self: stretch;
+}
+
+#gp-ml-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gp-game,
+.gp-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gp-game[hidden],
+.gp-fields[hidden],
+.gp-fields .field[hidden] {
+  display: none;
+}
+
+#gp-game-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gp-result {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.gp-result__source {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.gp-result[aria-pressed="true"] {
+  background: color-mix(in oklch, var(--accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.mcw-select,
+.mcw-search {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid var(--hairline-mid);
+  background: var(--well);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.mcw-search {
+  margin-top: 8px;
+}
+
+#mcw-games,
+#mcw-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#mcw-results {
+  margin-top: 6px;
+}
+
+.mcw-game {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--hairline-soft);
+  background: var(--well);
+}
+
+.mcw-game__icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  aspect-ratio: 1;
+  border-radius: 7px;
+}
+
+.mcw-game__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mcw-game__name {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.mcw-game__where {
+  font-size: 11px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcw-game__where.is-missing {
+  white-space: normal;
+  color: color-mix(in oklch, var(--accent) 70%, var(--ink));
+}
+
+.mcw-result {
+  appearance: none;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--lift);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mcw-result:hover,
+.mcw-result:focus-visible {
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
+  outline: none;
+}
+
+.mcw-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+#mcw-status {
+  flex: 1;
+  margin: 0;
+}
+
+#mcw-games-empty[hidden] {
+  display: none;
+}

@@ -1,0 +1,364 @@
+/* ==========================================================================
+   Eurorack — modules bolted across rails, in unequal widths.
+
+   The layout: fixed height, variable width. Every game is a faceplate in a
+   rack, and how wide it is comes from how big the install is — the same
+   `data-size` band the shelf uses, here as `flex-basis` rather than a column
+   span. A 60 GB game gets a double-wide plate; a key with no files on the
+   cartridge gets the narrow blank one.
+
+   This is the only skin whose rows are neither a column nor a grid: they wrap
+   across rails, so the pad's left and right walk a rail and up and down cross
+   between them, which the launcher works out by measuring.
+
+   Ported from a design written against a different set of class names. There
+   are no toggle switches or knobs: those are elements, and a stylesheet cannot
+   add elements. The LEDs below are the row's own status dot restyled.
+   ========================================================================== */
+
+:root {
+  --skin-width: 780;
+  --skin-height: 520;
+
+  --skin-art: none;
+  --skin-row-art: none;
+  --skin-logo: none;
+
+  --accent: #00ff66;
+  --accent-ink: #0d0d0d;
+  --radius: 0px;
+
+  --eu-case: #333333;
+  --eu-rail: #1a1a1a;
+  --eu-plate: #232323;
+  --eu-plate-lit: #2e2e2e;
+  --eu-screw: #6b6b6b;
+  --eu-ink: #e8e4dc;
+  --eu-muted: #8a8378;
+  --eu-led: #00ff66;
+  --eu-mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+#card {
+  background: var(--eu-rail);
+  color: var(--eu-ink);
+  font-family: var(--eu-mono);
+  border: 12px solid var(--eu-case);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 1px #000000,
+    0 18px 40px rgb(0 0 0 / 0.7);
+}
+
+#face {
+  border-radius: 0;
+}
+
+#plate,
+#scrim-top,
+#scrim-bottom,
+#cart-mark {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- the rails */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 38px;
+  background: linear-gradient(180deg, #2b2b2b, var(--eu-rail));
+  border-bottom: 2px solid #000000;
+}
+
+#chrome {
+  height: 38px;
+  padding: 0 10px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+#chrome .icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: #111111;
+  border: 1px solid #666666;
+  color: var(--eu-ink);
+}
+
+#chrome .icon-btn:hover {
+  border-color: var(--eu-led);
+  color: var(--eu-led);
+}
+
+#chrome .icon-btn--close:hover {
+  border-color: #ff3b30;
+  color: #ff3b30;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 38px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 10px 14px 0;
+  font-family: var(--eu-mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--eu-muted);
+}
+
+#game-title {
+  order: -1;
+  flex: none;
+  margin: 0;
+  padding: 2px 14px 10px;
+  font-family: var(--eu-mono);
+  --title-size: 16px;
+  --title-stretch: 100%;
+  --title-tracking: 0.08em;
+  --title-leading: 1.3;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--eu-ink);
+  text-shadow: none;
+}
+
+#notice {
+  padding: 0 14px 8px;
+  font-size: 11px;
+  color: #ff9f0a;
+}
+
+/* -------------------------------------------------------------- the modules */
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3px;
+  background: var(--eu-rail);
+  scrollbar-width: thin;
+  scrollbar-color: var(--eu-case) transparent;
+}
+
+/* A faceplate: fixed height, screwed to the rail top and bottom. */
+.game-row {
+  position: relative;
+  height: 132px;
+  flex: 1 1 128px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0;
+  padding: 12px 10px;
+  background: linear-gradient(180deg, var(--eu-plate), #1c1c1c);
+  border: 0;
+  border-left: 1px solid #444444;
+  border-right: 1px solid #0a0a0a;
+  border-radius: 0;
+  transition: background-color 120ms linear;
+}
+
+/* Rack screws, top left and bottom left of every plate. */
+.game-row::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--eu-screw), #2a2a2a);
+}
+
+.game-row::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--eu-screw), #2a2a2a);
+}
+
+.game-row:hover {
+  background: linear-gradient(180deg, var(--eu-plate-lit), #232323);
+}
+
+.game-row[aria-selected="true"] {
+  background: linear-gradient(180deg, #3a3a32, #262620);
+  box-shadow: inset 0 0 0 1px var(--eu-led);
+}
+
+/* Width is capacity. A big install needs a wide faceplate. */
+.game-row[data-size="large"] {
+  flex-basis: 268px;
+}
+
+.game-row[data-size="medium"] {
+  flex-basis: 190px;
+}
+
+.game-row[data-size="none"] {
+  flex-basis: 96px;
+}
+
+.game-row__body {
+  width: 100%;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+/* Faceplate legend, set the way a panel is silkscreened. */
+.game-row__title {
+  font-family: var(--eu-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--eu-muted);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.game-row[aria-selected="true"] .game-row__title {
+  color: var(--eu-ink);
+}
+
+.game-row__meta {
+  font-family: var(--eu-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #6a645b;
+}
+
+/* The panel LED, bottom right of the plate. */
+.game-row__dot {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #14200f;
+  box-shadow: inset 0 0 0 1px #000000;
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: var(--eu-led);
+  box-shadow:
+    inset 0 0 0 1px #000000,
+    0 0 12px var(--eu-led);
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 0;
+  padding: 10px 14px 12px;
+  gap: 10px;
+  align-items: center;
+  background: linear-gradient(180deg, #2b2b2b, var(--eu-rail));
+  border-top: 2px solid #000000;
+}
+
+.btn--play,
+.btn--eject {
+  font-family: var(--eu-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  border: 1px solid #000000;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 2px 0 #0a0a0a;
+}
+
+.btn--play {
+  flex: 1;
+  height: 40px;
+  background: linear-gradient(180deg, #3f3f3f, #262626);
+  color: var(--eu-led);
+  text-shadow: 0 0 10px rgb(0 255 102 / 0.5);
+}
+
+.btn--play:hover:not(:disabled) {
+  background: linear-gradient(180deg, #4a4a4a, #303030);
+}
+
+.btn--eject {
+  width: 76px;
+  height: 40px;
+  background: linear-gradient(180deg, #3f3f3f, #262626);
+  color: #ff9f0a;
+}
+
+.btn--play:active:not(:disabled),
+.btn--eject:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.6);
+}
+
+.btn:disabled {
+  background: #1f1f1f;
+  color: #55514a;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.btn--play.is-launching {
+  color: var(--eu-ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 0 16px rgb(0 255 102 / 0.4);
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--eu-rail);
+  color: var(--eu-muted);
+}
+
+#placeholder-initials {
+  color: var(--eu-led);
+}
+
+.pad-badge {
+  border-radius: 2px;
+  background: var(--eu-led);
+  color: var(--accent-ink);
+}

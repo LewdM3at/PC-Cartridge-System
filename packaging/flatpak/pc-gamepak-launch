@@ -1,0 +1,35 @@
+#!/bin/bash
+# One entry point, because a Flatpak has one `command` and this app has three
+# jobs: watch for a cartridge, show one, and write one.
+#
+#   pc-gamepak-launch --watch          the resident watcher
+#   pc-gamepak-launch --drive <path>   the launcher, on a cartridge
+#   pc-gamepak-launch [anything else]  the wizard
+#
+# The default is the wizard, not the launcher. Started with no arguments the
+# launcher only ever says "NO CARTRIDGE", and the menu entry is the one door a
+# person opens on purpose.
+
+set -euo pipefail
+
+case "${1:-}" in
+    --watch)
+        # The launcher the watcher starts is this same wrapper, since /app/bin
+        # is what exists inside the sandbox.
+        export PC_GAMEPAK_LAUNCHER="${PC_GAMEPAK_LAUNCHER:-/app/bin/pc-gamepak}"
+        exec /app/bin/pc-gamepak-watcher
+        ;;
+    --drive)
+        exec /app/bin/pc-gamepak "$@"
+        ;;
+    --verify)
+        shift
+        exec /app/bin/pc-gamepak-verify "$@"
+        ;;
+    "")
+        exec /app/bin/pc-gamepak --create
+        ;;
+    *)
+        exec /app/bin/pc-gamepak "$@"
+        ;;
+esac

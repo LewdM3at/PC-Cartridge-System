@@ -1,168 +1,196 @@
-# Disclaimer
+<div align="center">
 
-This project is a hobby experiment and is not an official Steam product.
+<img src="docs/icon.png" height="120" alt="" />
 
-Automatic launching depends on your operating system settings and security policies. Some systems may require additional configuration for automounting drives or allowing scripts to run automatically.
+# PC GamePak
 
-**Although there is a safe guard feature to auto-launch only trusted scripts, it still IS a security risk. Anyone with physical access to your PC *could* plug in a drive with a script on it, find the project folder and put their script to the trusted list. But at that point they could just execute their script already.<br>**
+**Turn removable storage into physical game cartridges.**
+Plug one in and a launcher appears with the game's cover art and two buttons.
 
-**Use this at your own risk**
+[![CI](https://github.com/HarryBMa/pc-gamepak/actions/workflows/ci.yml/badge.svg)](https://github.com/HarryBMa/pc-gamepak/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/HarryBMa/pc-gamepak)](https://github.com/HarryBMa/pc-gamepak/releases)
+[![WinGet version](https://img.shields.io/winget/v/HarryBMa.PCGamePak)](https://github.com/microsoft/winget-pkgs)
+[![Scoop version](https://img.shields.io/scoop/v/pc-gamepak?bucket=https%3A%2F%2Fgithub.com%2FHarryBMa%2Fscoop-bucket)](https://github.com/HarryBMa/scoop-bucket)
+[![License](https://img.shields.io/github/license/HarryBMa/pc-gamepak)](LICENSE)
+[![Support on Ko-Fi](https://img.shields.io/badge/Support-Ko--Fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/harrybma)
 
+<br />
 
+[![Windows Support](https://img.shields.io/badge/Windows-Supported-0078D4?logo=windows&logoColor=white)](#install)
+[![Linux Support](https://img.shields.io/badge/Linux-Supported-FCC624?logo=linux&logoColor=black)](#install)
+[![Steam Deck Support](https://img.shields.io/badge/Steam_Deck-Supported-1A9FFF?logo=steamdeck&logoColor=white)](#install)
+[![Works offline](https://img.shields.io/badge/Works-offline-2e7d52)](docs/MANUAL.md)
+[![Rust](https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white)](#build-from-source)
+[![Tauri 2](https://img.shields.io/badge/Tauri_2-24C8B8?logo=tauri&logoColor=white)](#build-from-source)
 
+<img width="560" alt="A cartridge going into a USB-C port and the launcher opening with it" src="docs/cartridge-demo.gif" />
 
-# PC Cartridge System
-
-<img width="970" height="546" alt="JTDUMcuDBav3BEspNBMw6A-970-80 jpg" src="https://github.com/user-attachments/assets/8c0a8d2b-ce5a-4aa5-9bac-5805016db31f" />
-
-<br>
-Physical game cartridges for your Steam library using 2.5" SATA SSDs.
-
-Turn your digital Steam games into something that feels physical: insert a cartridge, and your PC automatically detects it and launches the configured game or action.
-
-Each cartridge is a simple storage device containing a small launcher script. When inserted, the system detects the cartridge and executes the script file on the drive if it has been classified "trusted". 
-Launching a Steam/GoG game, opening a game's details page, or running any custom commands.
-
-## 3D-Print Files
-STEP-Files are available over at MakerWorld: [MakerWorld](https://makerworld.com/en/models/3057977-2-5-ssd-dock-cartridge-system#profileId-3440827)
-
-## Quickstart
-### Linux
-
-Clone the repository:
-
-```bash
-git clone https://github.com/LewdM3at/PC-Cartridge-System.git
-```
-Enter the project directory:
-```bash
-cd PC-Cartridge-System
-```
-Run the script:
-```bash
-./cartridge-linux.sh
-```
-<img width="811" height="425" alt="image" src="https://github.com/user-attachments/assets/9118395d-f977-48bb-bf3a-867d5a6143fd" />
-
-
-**Installation**<br>
-Select menu point 1) Install<br>
-The installer will install the required udev rule, systemd service, and launcher helper.
-
-**Trust Scripts / Check trust state**<br>
-After you have created a Cartridge with the launch.sh script, add the script to trusted-scripts with menu point 2) Trust Scripts.
-It will scan for any connected storage media for the launch.sh script and ask if you want to trust said script:
-<img width="656" height="592" alt="image" src="https://github.com/user-attachments/assets/ec8772e4-8e48-40f4-878b-5741eac8cc05" />
-
-
-You can also check the trust state of scripts here and have the option to stop trusting the scripts if they are already trusted.
-
-Any script that hasn't been trusted through this process **will NOT be automatically executed**
-! If you modify the script later on, you have to re-add it to trusted scripts again.<br>
-
-**Auto-Launch Scripts**<br>
-<img width="428" height="191" alt="image" src="https://github.com/user-attachments/assets/b233100c-f527-442b-87d6-c8746865450f" /><br>
-You can toggle the automatic execution of scripts by choosing this menu point.<br>
-For when you want to change something inside the script and don't want it to auto-launch when you insert the cartridge.<br>
-
-
-**Uninstallation:**<br>
-Select menu point 4) Uninstall <br>
-This will remove everything including the config files and trust scripts list.
-
-### Windows
-
-Download the repo:
-1. Click Code → Download ZIP OR download it from [Releases](https://github.com/LewdM3at/PC-Cartridge-System/releases)
-2. Extract it
-3. Right click on cartridge-windows.ps1 -> Run with Powershell
-
-<img width="807" height="329" alt="image" src="https://github.com/user-attachments/assets/88e48354-0e2a-4d78-8e93-81e306e84617" />
-<br>
-
-**Installation**<br>
-Select menu point 1) Install<br>
-The installer will install the required udev rule, systemd service, and launcher helper.
-
-**Trust Scripts**<br>
-After you have created a Cartridge with the launch.sh script, add the script to trusted-scripts with menu point 2) Trust Scripts.
-It will scan for any connected storage media for the launch.sh script and ask if you want to trust said script.
-<img width="656" height="446" alt="image" src="https://github.com/user-attachments/assets/a1c71905-2e77-4ec0-99da-1a8e78f65035" />
-
-You can also check the trust state of scripts here and have the option to stop trusting the scripts if they are already trusted.
-Any script that hasn't been trusted through this process **will NOT be automatically executed**
-! If you modify the script later on, you have to re-add it to trusted scripts again.<br>
-
-**Auto-Launch Scripts**<br>
-<img width="442" height="157" alt="image" src="https://github.com/user-attachments/assets/51109e77-a2e0-45da-be9a-3b621d3c7fd1" />
-
-You can toggle the automatic execution of scripts by choosing this menu point.<br>
-For when you want to change something inside the script and don't want it to auto-launch when you insert the cartridge.<br>
-
-**Uninstallation:**<br>
-Select menu point 4) Uninstall <br>
-This will remove everything including the config files and trust scripts list.
-
-
-## Supported Storage
-
-The project is designed around **2.5" SATA SSDs**.
-
-However, the same concept may work with other storage devices such as:
-
-- SD cards
-- USB flash drives
-- External HDDs
-- Other removable storage
-
-Compatibility with other storage types is **not guaranteed** and depends on your operating system, filesystem, automount configuration, and hardware.
-
-## How It Works
-
-Each cartridge contains a launcher script (launch.sh/launch.ps1) that will be executed by the helpers (depending on OS).
-Configure these scripts to whatever you need with Steam URL Protocol or any custom commands.
-
-### Linux
-
-The Linux version uses three components:
-
-- **udev rule**<br>
-The udev rule detects when a new storage partition is connected.<br>
-Its only job is to notify systemd that a game cartridge may have been inserted.<br>
-It does not execute the cartridge directly.<br>
-
-- **systemd service**<br>
-A systemd template service is used to handle cartridge launches.<br>
-The template allows the same service to work with any inserted device.<br>
-The service starts the launcher helper and passes the detected device name.<br>
-
-- **cartridge-launcher-helper**<br>
-The helper script waits for the desktop environment to mount the drive, then searches the cartridge at rool level for: `launch.sh` <br>
-If found, it checks the SHA256 sums of said script against the stored trusted-scripts file. <br>
-If the SHA256 matches, it executes the script.<br>
-Example cartridge:<br>
-SSD<br>
-└── launch.sh<br>
-└── SteamLibrary<br>
-The content of `launch.sh` decide what happens next.
+</div>
 
 ---
 
-#### Windows
+A cartridge is a small drive in a pocketable enclosure with a game on it. Push it
+into a USB-C port; the launcher opens showing what is on it. Press **Play** to
+start the game, or **Eject** to power the drive down and pull it out.
 
-The Windows version uses two components:
+Each cartridge is a drive with a `cartridge.conf` text file at its root. There
+are no scripts to write and nothing to allowlist, because **nothing on a
+cartridge is ever executed automatically** — pressing Play is the gate.
 
+<div align="center">
+<img width="260" alt="The launcher showing Dave the Diver: cover art filling the window, the game's logo over it, and a wide Play button beside an eject icon" src="docs/launcher.png" />
+&nbsp;
+<img width="260" alt="The launcher showing a two-game XCOM collection: the collection's logo in the corner, a rail of games, and the selected game's logo over one Play button" src="docs/launcher-bundle.png" />
+&nbsp;
+<img width="260" alt="The memory card, animated: the card slots into a dark stage and its saves fan out onto a ring round it; God of War, newer on the card, is copied home, then the ring turns to Tunic, changed on both, which asks which copy to keep" src="docs/memcard-demo.gif" />
+</div>
 
-- **Task Scheduler**<br>
-The installer creates a scheduled task that starts the cartridge monitor when the user logs in.<br>
-The task keeps the monitor running silently in the background.<br>
-- **cartridge-monitoring.ps1**<br>
-The PowerShell script monitors for newly inserted storage devices.<br>
-When a new drive is detected, it checks the root of the cartridge for: `launch.ps1` <br>
-If found, it checks the SHA256 sums of said script against the stored trusted-scripts file. <br>
-If the SHA256 matches, it executes the script.<br>
-Example cartridge:<br>
-SSD<br>
-└── launch.ps1<br>
-└── SteamLibrary<br>
-The content of `launch.ps1` decide what happens next.
+## Features
+
+- **Plug and it opens.** A background watcher notices the drive and shows the
+  launcher. Nothing runs until you press Play — or, if you ask it to, the game
+  starts on its own, a notification appears, or nothing happens at all. Even
+  set to start the game, a program carried *on* the cartridge still waits for a
+  click: a URI hands off to a launcher you already have, and a stranger's binary
+  does not get the machine.
+- **One game or a shelf of them.** A cartridge can carry a collection, with a
+  rail to pick from.
+- **Real eject.** The button parks the drive and powers it down, elevating only
+  if the unprivileged path fails.
+- **Controller and keyboard.** A pad navigates the list and works the buttons;
+  so do the arrow keys, Enter, `E` and `I`.
+- **Skinnable, by the cartridge.** A `.gamepak/skin.css` on the drive restyles
+  the launcher — its size, layout, and which of the four artworks it shows in
+  each place. Fourteen worked examples with screenshots in
+  [docs/skins/](docs/skins/); [SKINNING.md](docs/SKINNING.md) is the reference.
+- **Artwork from SteamGridDB**, optional and off until you add a key. Covers,
+  heroes, logos and icons are written onto the cartridge, so it looks the same
+  on a machine that has never heard of it.
+- **Steam-aware.** A cartridge registers as a Steam library so copied games run
+  from the drive rather than being redownloaded.
+- **The cartridge counts its own hours.** Launches, playtime and last-played go
+  on the drive, not on the PC, so the count follows the cartridge between
+  machines.
+- **Saves that travel too**, optional and off until you turn it on. A cartridge
+  can say where its saves live — as `{appdata}/Foo/Saves`, resolved by whichever
+  platform reads it — and insert and eject carry whichever copy changed. If both
+  changed, neither is touched and the launcher says so; anything replaced is
+  kept beside it. A game the cartridge *carries* needs none of that: one line
+  gives it its whole home directory on the drive, and every save it writes goes
+  there whether or not anyone knew where it would put them.
+- **Memory cards.** A drive with a `memorycard.conf` carries saves and no
+  games: plug it in and every save shows as a block, the way a console's memory
+  card browser showed them, with which copy is newer and a button to copy it
+  either way. The wizard makes one — it finds where each game saves from
+  [Ludusavi](https://github.com/mtkennerly/ludusavi-manifest)'s list if you
+  switch that on, or you point at the folder. A cartridge can be a *combo drive*
+  too, and keep its memory card one button away.
+- **Tap to select a GamePak.** Write its stable ID as an NDEF URI and use a
+  PC/SC-compatible PN532 reader. The card selects the launcher entry; Play is
+  still required to start the game.
+- **Works offline.** Nothing phones home. Network use is limited to optional
+  artwork lookup and any Wake-on-LAN/readiness checks you configure for a host.
+
+## Supported platforms
+
+| | Status |
+|---|---|
+| Windows 10 / 11 | Supported |
+| Linux (systemd + udev) | Supported |
+| Steam Deck | Supported |
+| macOS | Not yet — the drive layer needs a rewrite |
+
+Any removable drive works: NVMe in a USB enclosure, a portable SSD, or a USB
+stick. NTFS by default — the one format that both Windows and Linux write and
+that holds the symlinks Steam needs to install Proton onto a cartridge. exFAT
+when a Mac has to write to the drive, btrfs for Linux-only cartridges, and five
+more in the picker for a cartridge that only ever meets one kind of machine.
+
+## Install
+
+**Windows** — [WinGet](https://github.com/microsoft/winget-pkgs):
+
+```powershell
+winget install HarryBMa.PCGamePak
+```
+
+Or [Scoop](https://scoop.sh):
+
+```powershell
+scoop bucket add harrybma https://github.com/HarryBMa/scoop-bucket
+scoop install pc-gamepak
+```
+
+Either puts both programs on your PATH, but a package manager cannot register
+the watcher to start at logon — that is what opens the launcher when a
+cartridge goes in — so run the installer once (it is in the package's folder,
+or take it from [Releases](https://github.com/HarryBMa/pc-gamepak/releases)):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install.ps1 -Mode Watcher
+```
+
+**Linux** — the pacman package is written and tested, and waiting on the AUR
+reopening registrations. Building it by hand is a clone and a command:
+
+```bash
+git clone https://github.com/HarryBMa/pc-gamepak.git
+cd pc-gamepak/packaging/aur/pc-gamepak && makepkg -si
+systemctl --user enable --now pc-gamepak-watcher.service
+```
+
+There is a Flatpak too, for everything else and for the Steam Deck. Or clone and
+run `sudo linux/install.sh`, or `linux/install-user.sh` for a rootless install
+under `~/.local`.
+
+**[Full instructions, and why automount decides whether any of it
+works →](docs/INSTALL.md)**
+
+## Usage
+
+Run `pc-gamepak --create` to open the wizard: pick a game, pick a drive, and it
+writes the cartridge — copying the files if you ask it to, fetching artwork, and
+registering the drive with Steam.
+
+Then plug the cartridge in. The launcher opens; press Play.
+
+<div align="center">
+<img width="560" alt="The cartridge wizard editing Dave the Diver: the drive, name, options including the platform, the four artwork slots and the game on the left, and a preview of the launcher on the right" src="docs/wizard.png" />
+</div>
+
+To write one by hand, put a `cartridge.conf` at the drive's root:
+
+```ini
+title=Stardew Valley
+executable=steam://rungameid/413150
+cover=cover.jpg
+```
+
+## Build from source
+
+Needs [Rust](https://rustup.rs) and Node 18+. On Windows also the Visual Studio
+Build Tools with "Desktop development with C++"; on Linux, `webkit2gtk` and
+`libudev`.
+
+```bash
+git clone https://github.com/HarryBMa/pc-gamepak.git
+cd pc-gamepak
+cd tauri-ui && npm install && npm run build && cd ..
+
+sudo linux/install.sh          # Linux
+# Windows: right-click windows/install.ps1 → Run with PowerShell
+```
+
+`core/` holds every decision the launcher and wizard make, with no UI and no
+Tauri, so `cd core && cargo test` covers the logic on any machine.
+
+## More
+
+[Installing on Linux](docs/INSTALL.md) · [The manual](docs/MANUAL.md) ·
+[Writing a skin](docs/SKINNING.md) · [Other frontends](docs/FRONTENDS.md) ·
+[Where the project is](docs/STATUS.md) · [What changed](CHANGELOG.md) ·
+[Contributing](CONTRIBUTING.md)
+
+## License
+
+[MIT](LICENSE).

@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T09:00:00Z",
+  "title": "Design System: PC GamePak",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Cover Accent", "canonical": "oklch(0.72 0.15 68)", "tonalRamp": ["oklch(0.25 0.06 68)", "oklch(0.35 0.09 68)", "oklch(0.45 0.12 68)", "oklch(0.55 0.14 68)", "oklch(0.65 0.15 68)", "oklch(0.72 0.15 68)", "oklch(0.82 0.12 68)", "oklch(0.92 0.06 68)"] },
+      "shell": { "role": "neutral", "displayName": "Warm Night", "canonical": "oklch(0.155 0.005 65)", "tonalRamp": ["oklch(0.115 0 0)", "oklch(0.125 0.005 65)", "oklch(0.155 0.005 65)", "oklch(0.185 0.006 65)", "oklch(0.3 0.006 65)", "oklch(0.5 0.008 75)", "oklch(0.75 0.008 75)", "oklch(0.97 0.006 75)"] },
+      "ink": { "role": "neutral", "displayName": "Label White", "canonical": "oklch(0.97 0.006 75)" },
+      "danger": { "role": "tertiary", "displayName": "Eject Red", "canonical": "oklch(0.68 0.19 27)" },
+      "good": { "role": "secondary", "displayName": "In-Step Green", "canonical": "oklch(0.76 0.15 145)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The game's title on the launcher when there is no logo." },
+      "headline": { "displayName": "Headline", "purpose": "A dialog's one heading; the memory card's name." },
+      "title": { "displayName": "Title", "purpose": "Card titles, list rows, the collection's name in the corner." },
+      "body": { "displayName": "Body", "purpose": "Explanations and hints." },
+      "label": { "displayName": "Label", "purpose": "Uppercase section labels and buttons; the 11px floor." },
+      "data": { "displayName": "Data", "purpose": "Sizes, paths, times, templates. Never as costume." }
+    },
+    "shadows": [
+      { "name": "lift", "value": "0 12px 20px -12px oklch(0 0 0 / 0.85)", "purpose": "A selected block raised off its grid." },
+      { "name": "card", "value": "inset 0 0 0 1px oklch(1 0 0 / 0.11), 0 14px 30px -12px oklch(0 0 0 / 0.8)", "purpose": "The launcher preview in the wizard." }
+    ],
+    "motion": [
+      { "name": "ease", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Ease-out-quint for every state change." },
+      { "name": "seat", "value": "620ms", "purpose": "The cartridge face entering or leaving the slot." },
+      { "name": "unbox", "value": "2750ms", "purpose": "The first-insert unboxing, skippable, once per cartridge per machine." }
+    ],
+    "breakpoints": [
+      { "name": "launcher", "value": "420x630" },
+      { "name": "wizard-min", "value": "870x520" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one filled action per screen: Play, Write, Update, the suggested copy.",
+      "html": "<button class=\"ds-btn-primary\">Play <kbd class=\"ds-key\">↵</kbd></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 9px; height: 46px; padding: 0 20px; border: 0; border-radius: 5px; background: oklch(0.72 0.15 68); color: oklch(0.16 0.02 65); font: 700 12px/1 Archivo, sans-serif; letter-spacing: 0.09em; text-transform: uppercase; box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.26); cursor: pointer; transition: background-color 130ms linear, transform 130ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: color-mix(in oklch, oklch(0.72 0.15 68) 88%, white); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.72 0.15 68); outline-offset: 2px; } .ds-key { font: 600 11px/1 'Spline Sans Mono', monospace; padding: 3px 5px 2px; border-radius: 2px; background: oklch(0 0 0 / 0.18); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Every other action; the danger variant turns red only when hovered, focused or armed.",
+      "html": "<button class=\"ds-btn-ghost\">Copy to card</button>",
+      "css": ".ds-btn-ghost { height: 46px; padding: 0 17px; border: 1px solid oklch(1 0 0 / 0.16); border-radius: 5px; background: oklch(1 0 0 / 0.04); color: oklch(0.97 0.006 75); font: 700 12px/1 Archivo, sans-serif; letter-spacing: 0.09em; text-transform: uppercase; cursor: pointer; transition: border-color 130ms linear, background-color 130ms linear; } .ds-btn-ghost:hover { border-color: oklch(1 0 0 / 0.32); background: oklch(0.18 0.004 65 / 0.7); } .ds-btn-ghost:focus-visible { outline: 2px solid oklch(0.72 0.15 68); outline-offset: 2px; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "Frameless-window chrome: details, memory card, close.",
+      "html": "<button class=\"ds-icon-btn\" aria-label=\"Details\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\"><circle cx=\"8\" cy=\"8\" r=\"6.2\"/><path d=\"M8 5.1v.1M8 7.4v3.6\"/></svg></button>",
+      "css": ".ds-icon-btn { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 5px; background: oklch(0.14 0.004 65 / 0.5); color: oklch(0.75 0.008 75); cursor: pointer; transition: background-color 130ms linear, color 130ms linear; } .ds-icon-btn:hover { background: oklch(0.14 0.004 65 / 0.82); color: oklch(0.97 0.006 75); } .ds-icon-btn:focus-visible { outline: 2px solid oklch(0.72 0.15 68); outline-offset: 2px; }"
+    },
+    {
+      "name": "Build Card",
+      "kind": "card",
+      "refersTo": "build-card",
+      "description": "States an answer in the wizard with the way to change it.",
+      "html": "<div class=\"ds-build-card\"><div><p class=\"ds-title\">Hollow Knight</p><p class=\"ds-meta\">Steam · 9.1 GB</p></div><button class=\"ds-change\">Change</button></div>",
+      "css": ".ds-build-card { display: flex; align-items: center; gap: 13px; padding: 10px 12px; border-radius: 11px; border: 1px solid oklch(1 0 0 / 0.075); background: oklch(0 0 0 / 0.26); color: oklch(0.97 0.006 75); font-family: Archivo, sans-serif; } .ds-build-card > div { flex: 1; } .ds-title { margin: 0; font-size: 15px; font-weight: 700; } .ds-meta { margin: 2px 0 0; font: 11px 'Spline Sans Mono', monospace; color: oklch(0.75 0.008 75); } .ds-change { height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid oklch(1 0 0 / 0.11); background: oklch(1 0 0 / 0.04); color: oklch(0.86 0.008 75); font: 700 12px Archivo, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; } .ds-change:hover { background: oklch(1 0 0 / 0.1); }"
+    },
+    {
+      "name": "Save Block",
+      "kind": "custom",
+      "refersTo": "save-block",
+      "description": "A save on the memory card: icon, name, and a lamp that says where it stands in shape and colour.",
+      "html": "<div class=\"ds-block\" aria-selected=\"true\"><span class=\"ds-icon\">SV</span><i class=\"ds-lamp\"></i><span class=\"ds-name\">Stardew Valley</span></div>",
+      "css": ".ds-block { position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px 10px; border-radius: 5px; border: 1px solid oklch(1 0 0 / 0.075); background: oklch(1 0 0 / 0.04); font-family: Archivo, sans-serif; transition: transform 220ms cubic-bezier(0.16,1,0.3,1); } .ds-block[aria-selected=true] { transform: translateY(-3px); border-color: oklch(0.72 0.15 68); background: color-mix(in oklch, oklch(0.72 0.15 68) 9%, oklch(0.185 0.006 65)); box-shadow: 0 12px 20px -12px oklch(0 0 0 / 0.85); } .ds-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 4px; background: color-mix(in oklch, oklch(0.72 0.15 68) 26%, oklch(0.185 0.006 65)); color: oklch(0.97 0.006 75); font-weight: 800; font-size: 20px; } .ds-lamp { position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: oklch(0.76 0.15 145); } .ds-name { font-size: 12px; font-weight: 600; color: oklch(0.97 0.006 75); text-align: center; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Slot and the Cartridge",
+    "overview": "The launcher window is a console's cartridge slot and the cover art is the cartridge seated in it. Everything the system does comes from that one image: the cover fills the window, the chrome prints on top of it and gets out of its way, Eject rides the whole face out of the slot and leaves the empty slot behind, and a new cartridge comes out of its box the first time a machine sees it. It is read from a couch as often as from a desk, and driven by a gamepad as often as a mouse, so the system is quiet, warm and large where it matters.",
+    "keyCharacteristics": [
+      "Cover art is the surface; chrome is a thin print over it.",
+      "One accent, sampled from the cartridge's own art, contrast-checked for its ink.",
+      "Warm near-black neutrals (hue 65–75), never cold grey.",
+      "Physical motion that means something: seat, eject, unbox. Nothing ambient.",
+      "Four actions on four face buttons; every control reachable by pad and keys."
+    ],
+    "rules": [
+      { "name": "The Borrowed Colour Rule", "body": "The accent belongs to the cartridge. Never hard-code a brand hue where the accent goes; a greyscale cover resets to the stock amber rather than keeping the last game's.", "section": "colors" },
+      { "name": "The One Fill Rule", "body": "One filled button per screen. Everything else is ghost, text or icon.", "section": "colors" },
+      { "name": "The Couch Floor Rule", "body": "Nothing that carries meaning is smaller than 11px, and anything read on the launcher from a distance is 12px or more, headlines 14px or more.", "section": "typography" },
+      { "name": "The No Kicker Rule", "body": "No small label above a heading. A collection's name goes where its logo would, in the corner.", "section": "typography" },
+      { "name": "The No Halo Rule", "body": "No zero-offset coloured glow. Selection is a border in the accent and a lift, not light.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do let the cover be the surface; print chrome over it on a short scrim.",
+      "Do take the accent from the cartridge and check its ink for contrast.",
+      "Do say every state in words as well as colour, and before a risky action, not after.",
+      "Do give every action a key and a pad button, and show them."
+    ],
+    "donts": [
+      "Don't put a small label above a heading.",
+      "Don't use a zero-offset coloured glow, a radial halo, or glass as decoration.",
+      "Don't set meaningful text below 11px, or below 12px on the launcher.",
+      "Don't give one pad button a destructive meaning on one screen and a different one on the next."
+    ]
+  }
+}

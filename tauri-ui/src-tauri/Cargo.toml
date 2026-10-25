@@ -1,0 +1,59 @@
+[package]
+name = "pc-gamepak"
+version = "1.2.0"
+edition = "2021"
+description = "Popup launcher for the PC GamePak"
+license = "MIT"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+gamepak-core = { path = "../../core" }
+# No "protocol-asset": the cover is handed to the webview as a data URI, so the
+# asset protocol stays switched off (see tauri.conf.json).
+# No "tray-icon": the notification-area icon belongs to the watcher, which is
+# resident for the whole session. This process is opened on demand and exits
+# with its window, so an icon here vanished exactly when it was needed.
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+tauri-plugin-dialog = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
+    "Win32_System_IO",
+    "Win32_System_Ioctl",
+    # CreateFileW takes a *const SECURITY_ATTRIBUTES, so it is gated behind
+    # this even though the eject path passes null.
+    "Win32_Security",
+    # DwmSetWindowAttribute, to stop Windows rounding a window that rounds
+    # itself.
+    "Win32_Graphics_Dwm",
+    # CM_Request_Device_Eject and the SetupAPI walk that finds the device to
+    # ask, which is how Eject works without administrator where it can.
+    "Win32_Devices_DeviceAndDriverInstallation",
+    # ShellExecuteExW with the "runas" verb, to re-run this binary elevated for
+    # the eject that cannot be done any other way.
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+    # GetDpiForWindow, to size a window's icons for the screen it is on.
+    "Win32_UI_HiDpi",
+    # SHELLEXECUTEINFOW carries an HKEY, so it is gated behind the registry
+    # feature even though nothing here touches the registry.
+    "Win32_System_Registry",
+    # Waiting on that elevated run and reading its exit code.
+    "Win32_System_Threading",
+    # AttachThreadInput and SetFocus, for taking the keyboard on a window
+    # Windows put in front without giving it focus.
+    "Win32_UI_Input_KeyboardAndMouse",
+] }
+
+# The launcher is started on insert and exits when it is dismissed, so start-up
+# time and binary size matter more than peak throughput.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

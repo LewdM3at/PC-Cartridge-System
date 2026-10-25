@@ -1,0 +1,51 @@
+name: winget
+
+# Sends each published release to microsoft/winget-pkgs, so `winget upgrade`
+# sees it without anyone running wingetcreate by hand.
+#
+# `released` fires when the draft that release.yml makes is published — by a
+# person, which matters: events caused by the workflow's own GITHUB_TOKEN start
+# no other workflows. Drafts and pre-releases are skipped.
+#
+# Needs, once:
+#   - a fork of microsoft/winget-pkgs on the repository owner's account, which
+#     the pull request is opened from;
+#   - a classic token with `public_repo` saved as the WINGET_TOKEN secret. The
+#     workflow's own token cannot open a pull request on another repository.
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Published release to submit again, e.g. v1.1.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  winget:
+    name: submit to winget-pkgs
+    runs-on: ubuntu-latest
+    steps:
+      # The action's own version default reads the release event, which a
+      # manual run does not have, so both are worked out here.
+      - id: tag
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      # v2, pinned by commit: this step is handed a token that can push to
+      # the fork, so a moved tag should not change what runs.
+      - uses: vedantmgoyal9/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e
+        with:
+          identifier: HarryBMa.PCGamePak
+          release-tag: ${{ steps.tag.outputs.tag }}
+          version: ${{ steps.tag.outputs.version }}
+          # The release carries a Linux tarball and checksums too; only the
+          # Windows zip is an installer.
+          installers-regex: '-windows-x86_64\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

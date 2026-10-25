@@ -1,0 +1,362 @@
+/* ==========================================================================
+   Cyberpunk — wide and split: titles down the left, the hero filling the right.
+
+   Art slots: a hero as the room, covers in the list, the game's logo printed
+   over the picture. The only skin of the set whose list is a **column beside**
+   the artwork rather than under or over it, which is what the width is for.
+
+   Left and right on the pad still move by one here — a single column is a
+   single column however wide the window is.
+   ========================================================================== */
+
+:root {
+  --skin-width: 720;
+  --skin-height: 460;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: game;
+
+  --accent: #00e5ff;
+  --accent-ink: #04121a;
+  --radius: 0px;
+
+  --cy-cyan: #00e5ff;
+  --cy-magenta: #ff00ee;
+  --cy-bg: #070712;
+  --cy-line: rgb(0 229 255 / 0.22);
+  --cy-font: ui-monospace, "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+#card {
+  background: var(--cy-bg);
+  color: var(--cy-cyan);
+  font-family: var(--cy-font);
+  border: 1px solid var(--cy-cyan);
+  border-radius: 0;
+  box-shadow:
+    0 0 40px rgb(0 229 255 / 0.2),
+    inset 0 0 60px rgb(0 0 20 / 0.8);
+}
+
+#face {
+  border-radius: 0;
+}
+
+/* The hero belongs to the right-hand half only. Positioning `#plate` is the
+   piece that makes this a split rather than a list over a picture. */
+#plate {
+  inset: 42px 0 0 220px;
+}
+
+#plate img {
+  filter: brightness(0.7) saturate(1.3);
+}
+
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: 42px 0 0 220px;
+  background:
+    linear-gradient(135deg, rgb(0 0 0 / 0.6) 0%, transparent 60%, rgb(0 5 20 / 0.8) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 3px,
+      rgb(0 0 0 / 0.12) 3px 4px
+    );
+}
+
+#cart-mark {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ the bar */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 42px;
+  background: rgb(0 229 255 / 0.04);
+  border-bottom: 1px solid var(--cy-line);
+}
+
+#chrome {
+  height: 42px;
+  padding: 0 14px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+#chrome .icon-btn {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--cy-cyan);
+  color: var(--cy-cyan);
+  box-shadow: 0 0 6px rgb(0 229 255 / 0.3);
+}
+
+#chrome .icon-btn:hover {
+  background: rgb(0 229 255 / 0.14);
+}
+
+#chrome .icon-btn--close {
+  border-color: var(--cy-magenta);
+  color: var(--cy-magenta);
+  box-shadow: 0 0 6px rgb(255 0 238 / 0.4);
+}
+
+#chrome .icon-btn--close:hover {
+  background: rgb(255 0 238 / 0.18);
+}
+
+/* The corner rules, on the layer above the stage so they cross the artwork. */
+#skin-chrome {
+  inset: 0;
+  background:
+    linear-gradient(var(--cy-cyan), var(--cy-cyan)) 0 0 / 2px 30px no-repeat,
+    linear-gradient(var(--cy-cyan), var(--cy-cyan)) 0 0 / 30px 2px no-repeat,
+    linear-gradient(var(--cy-cyan), var(--cy-cyan)) 100% 100% / 2px 30px no-repeat,
+    linear-gradient(var(--cy-cyan), var(--cy-cyan)) 100% 100% / 30px 2px no-repeat;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 42px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 1fr auto;
+}
+
+/* Down the left, its own column, full height. */
+#game-list {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  border-right: 1px solid var(--cy-line);
+  scrollbar-width: thin;
+  scrollbar-color: var(--cy-line) transparent;
+}
+
+.game-row {
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid rgb(0 229 255 / 0.07);
+  border-left: 2px solid transparent;
+  border-radius: 0;
+}
+
+.game-row:hover {
+  background: rgb(0 229 255 / 0.04);
+}
+
+.game-row[aria-selected="true"] {
+  background: rgb(0 229 255 / 0.08);
+  border-left-color: var(--cy-cyan);
+  box-shadow: none;
+}
+
+.game-row__cover {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 0;
+  filter: grayscale(80%) brightness(0.5);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  filter: none;
+}
+
+.game-row__cover--empty {
+  background: #0b0b1c;
+  color: var(--cy-cyan);
+  font-size: 10px;
+  filter: none;
+}
+
+.game-row__title {
+  font-family: var(--cy-font);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  line-height: 1.7;
+  color: rgb(255 255 255 / 0.35);
+}
+
+.game-row[aria-selected="true"] .game-row__title {
+  color: var(--cy-cyan);
+  text-shadow: 0 0 8px rgb(0 229 255 / 0.7);
+}
+
+.game-row__meta {
+  font-family: var(--cy-font);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgb(0 229 255 / 0.4);
+}
+
+.game-row__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  background: rgb(0 229 255 / 0.15);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: var(--cy-magenta);
+  box-shadow: 0 0 8px var(--cy-magenta);
+}
+
+/* ------------------------------------------------- the right-hand half */
+
+#eyebrow {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  margin: 0;
+  padding: 12px 16px 0;
+  font-family: var(--cy-font);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgb(0 229 255 / 0.5);
+}
+
+/* Printed over the hero, bottom left of the picture. Placed in the right-hand
+   cell explicitly: `#stage` is a grid here and an unplaced child auto-flows
+   into the first column, which is the list. */
+#title-logo {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  justify-self: start;
+  padding: 0 16px 14px;
+  max-width: min(70%, 300px);
+  max-height: 88px;
+  margin: 0 0 6px;
+  object-position: left bottom;
+  filter: drop-shadow(0 0 18px rgb(0 229 255 / 0.5));
+}
+
+#game-title {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  margin: 0;
+  padding: 0 16px 14px;
+  font-family: var(--cy-font);
+  --title-size: 17px;
+  --title-stretch: 100%;
+  --title-tracking: 0.16em;
+  --title-leading: 1.3;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--cy-cyan);
+  text-shadow: 0 0 16px rgb(0 229 255 / 0.9);
+}
+
+#notice {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  padding: 0 16px 4px;
+  font-size: 10px;
+  color: var(--cy-magenta);
+}
+
+/* --------------------------------------------------------------- the strip */
+
+#button-row {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  padding: 10px 14px;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid var(--cy-line);
+  background: #05050f;
+}
+
+/* Cut across the corners, which is the one shape this look is made of. */
+.btn--play {
+  flex: 0 0 auto;
+  width: 180px;
+  height: 40px;
+  background: rgb(0 229 255 / 0.12);
+  border: 2px solid var(--cy-cyan);
+  border-radius: 0;
+  clip-path: polygon(9px 0%, 100% 0%, calc(100% - 9px) 100%, 0% 100%);
+  font-family: var(--cy-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cy-cyan);
+  text-shadow: 0 0 8px rgb(0 229 255 / 0.8);
+  box-shadow: 0 0 10px rgb(0 229 255 / 0.25);
+}
+
+.btn--play:hover:not(:disabled) {
+  background: rgb(0 229 255 / 0.14);
+  box-shadow: 0 0 20px rgb(0 229 255 / 0.5);
+}
+
+.btn--play.is-launching {
+  background: rgb(0 229 255 / 0.2);
+}
+
+.btn--eject {
+  width: 74px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--cy-magenta);
+  border-radius: 0;
+  font-family: var(--cy-font);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cy-magenta);
+  box-shadow: 0 0 6px rgb(255 0 238 / 0.4);
+}
+
+.btn--eject:hover:not(:disabled) {
+  background: rgb(255 0 238 / 0.14);
+}
+
+.btn:disabled {
+  background: transparent;
+  border-color: rgb(0 229 255 / 0.2);
+  color: rgb(0 229 255 / 0.25);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--cy-bg);
+  color: var(--cy-cyan);
+}
+
+.pad-badge {
+  border-radius: 0;
+  background: var(--cy-magenta);
+  color: #ffffff;
+}

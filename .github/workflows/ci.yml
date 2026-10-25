@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  # The logic that can be checked anywhere. gamepak-core has no UI dependency
+  # on purpose, so this needs no webkit and no display.
+  #
+  # Run on both operating systems, not just Linux. core has Windows-only code —
+  # volume enumeration, TRIM, the per-cartridge tuning — and when only Linux
+  # checked it, a Windows-only compile error surfaced three jobs later as a
+  # launcher failure, which is a confusing place to find out that a crate with
+  # no UI does not build.
+  core:
+    name: core logic (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      # Formatting is the same everywhere; checking it once is enough.
+      - if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --manifest-path core/Cargo.toml --check
+      - run: cargo clippy --manifest-path core/Cargo.toml --all-targets
+      - run: cargo test --manifest-path core/Cargo.toml
+
+  # The watcher is Windows-only in behaviour but must keep compiling on Linux,
+  # where it builds a stub that tells you to install the udev rule instead.
+  watcher:
+    name: watcher (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: watcher
+      - name: Install PC/SC Lite development files
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libpcsclite-dev
+      - run: cargo fmt --manifest-path watcher/Cargo.toml --check
+      - run: cargo test --manifest-path watcher/Cargo.toml
+      - run: cargo build --manifest-path watcher/Cargo.toml --release
+
+  # The Tauri binary. Only checked, not bundled: this is the part that needs
+  # webkit2gtk, and a check catches the type errors that matter.
+  launcher:
+    name: launcher (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install webkit2gtk
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev \
+                                  librsvg2-dev libssl-dev libayatana-appindicator3-dev \
+                                  libpcsclite-dev
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tauri-ui/src-tauri
+      - run: cargo check --manifest-path tauri-ui/src-tauri/Cargo.toml --all-targets
+
+  # The frontend ships unbundled, so a syntax error would only show up at
+  # runtime in the webview. This is the cheapest way to catch one.
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check the JavaScript parses
+        run: |
+          for file in tauri-ui/app/src/*.js tools/*.mjs; do
+            echo "checking $file"
+            node --check "$file"
+          done
+      - name: Check every element the scripts reach for exists
+        run: node tools/check-dom-ids.mjs
+      # The version lives in fourteen places across five formats. Before this
+      # ran, the crates said 1.0.1, package-lock.json said 0.1.0 and the AUR and
+      # WinGet manifests said 1.0.0 — so two of the three channels people install
+      # from pointed at a release older than the code, and nothing noticed.
+      - name: Check every version site agrees
+        run: node tools/check-versions.mjs
+
+  shell:
+    name: shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y shellcheck
+      # linux/ only. This used to glob ./*.sh as well, for the gamepak-linux.sh
+      # menu wrapper the README once pointed at — which was never written, so
+      # the glob matched nothing, bash -n was handed the literal pattern, and
+      # this job was red on main for reasons unrelated to any script in it.
+      - name: Syntax
+        run: for f in linux/*.sh; do bash -n "$f"; done
+      # error-level only for now: the installer scripts predate this workflow and
+      # have not been through shellcheck yet. Tighten to --severity=warning once
+      # they have.
+      - name: shellcheck
+        run: shellcheck --severity=error linux/*.sh

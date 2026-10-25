@@ -1,0 +1,354 @@
+/* ==========================================================================
+   Bricolage — lab bench equipment. Label tape, hard shadows, hazard stripes.
+
+   Art slots: covers in the rail, no fill, no logo. The artwork is a specimen
+   in a rack rather than a poster, so it stays small and the window is paper.
+
+   Ported from a design written against a different set of class names. Fonts
+   are system stacks because the content security policy is `font-src 'self'`
+   and a skin cannot fetch a webfont.
+   ========================================================================== */
+
+:root {
+  --skin-width: 460;
+  --skin-height: 640;
+
+  --skin-art: none;
+  --skin-row-art: grid;
+  --skin-logo: none;
+
+  --accent: #d9381e;
+  --accent-ink: #ffffff;
+  --radius: 0px;
+
+  --lab-paper: #d8dcd6;
+  --lab-card: #eef1ed;
+  --lab-ink: #111111;
+  --lab-muted: #555555;
+  --lab-red: #d9381e;
+  --lab-blue: #0055a5;
+  --lab-tape: #fdf8c2;
+  --lab-tape-edge: #c8b97e;
+  --lab-mono: "Courier New", ui-monospace, Consolas, monospace;
+  --lab-heavy: "Arial Black", "Arial Bold", Arial, sans-serif;
+}
+
+#card {
+  background: var(--lab-paper);
+  color: var(--lab-ink);
+  font-family: var(--lab-mono);
+  border: 2px solid var(--lab-ink);
+  border-radius: 0;
+  box-shadow: 6px 6px 0 var(--lab-ink);
+}
+
+#face {
+  border-radius: 0;
+}
+
+/* Paper, not a poster. */
+#plate,
+#scrim-top,
+#scrim-bottom,
+#cart-mark {
+  display: none;
+}
+
+/* ------------------------------------------------------------ the header */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 46px;
+  background: var(--lab-card);
+  border-bottom: 2px solid var(--lab-ink);
+}
+
+/* The label-maker tape, on the layer above the stage so it can hang over the
+   edge of the header the way a real one does. */
+#skin-chrome {
+  inset: 30px auto auto 18px;
+  width: auto;
+  height: auto;
+}
+
+#skin-chrome::before {
+  content: "PROPERTY OF LAB 04";
+  display: block;
+  background: var(--lab-tape);
+  color: #222222;
+  font-family: var(--lab-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border: 1px solid var(--lab-tape-edge);
+  transform: rotate(-1.5deg);
+  box-shadow: 1px 1px 0 rgb(0 0 0 / 0.18);
+}
+
+#chrome {
+  height: 46px;
+  padding: 0 12px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+#chrome .icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+  background: var(--lab-paper);
+  border: 2px solid var(--lab-ink);
+  color: var(--lab-ink);
+  box-shadow: 2px 2px 0 var(--lab-ink);
+}
+
+#chrome .icon-btn:hover {
+  background: var(--lab-blue);
+  color: #ffffff;
+}
+
+#chrome .icon-btn--close:hover {
+  background: var(--lab-red);
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 46px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 20px 18px 0;
+  font-family: var(--lab-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lab-blue);
+}
+
+#game-title {
+  order: -1;
+  flex: none;
+  margin: 0;
+  padding: 4px 18px 14px;
+  font-family: var(--lab-heavy);
+  --title-size: 22px;
+  --title-stretch: 100%;
+  --title-tracking: -0.01em;
+  --title-leading: 1.1;
+  text-transform: uppercase;
+  text-shadow: none;
+  color: var(--lab-ink);
+}
+
+#notice {
+  padding: 0 18px 10px;
+  font-family: var(--lab-mono);
+  font-size: 11px;
+  color: var(--lab-muted);
+}
+
+/* ---------------------------------------------------------------- the rack */
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0 18px;
+  padding: 0;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lab-ink) transparent;
+}
+
+/* Each one is a specimen card, screwed to the board. */
+.game-row {
+  position: relative;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--lab-card);
+  border: 2px solid var(--lab-ink);
+  border-radius: 0;
+  color: var(--lab-ink);
+  box-shadow: 4px 4px 0 var(--lab-ink);
+  transition: transform 90ms linear, box-shadow 90ms linear;
+}
+
+.game-row:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--lab-ink);
+}
+
+/* Hazard stripes down the edge of the one that is live.
+
+   Drawn as a strip rather than with `border-image`: that replaces the border
+   on all four sides at once, and zeroing three of them took the card's outline
+   with it. A pseudo-element is one edge and leaves the rest alone. */
+.game-row[aria-selected="true"] {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--lab-ink);
+  padding-left: 24px;
+  /* The base lays 50% black over the selected row, which is right on a dark
+     window and turns this cream card to mud. Stated rather than inherited. */
+  background: #fdecea;
+  border-color: var(--lab-ink);
+}
+
+.game-row[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 14px;
+  border-right: 2px solid var(--lab-ink);
+  background: repeating-linear-gradient(
+    -45deg,
+    #111111 0 6px,
+    var(--lab-red) 6px 12px
+  );
+}
+
+.game-row__cover {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 0;
+  border: 2px solid var(--lab-ink);
+  background: var(--lab-paper);
+}
+
+.game-row__cover--empty {
+  background: var(--lab-paper);
+  color: var(--lab-ink);
+  font-family: var(--lab-heavy);
+  font-size: 13px;
+}
+
+.game-row__title {
+  font-family: var(--lab-heavy);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--lab-ink);
+}
+
+.game-row__meta {
+  font-family: var(--lab-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--lab-muted);
+}
+
+/* A panel lamp: dark until this is the one Play acts on. */
+.game-row__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333333;
+  border: 2px solid var(--lab-ink);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: #00ff66;
+  box-shadow: 0 0 8px rgb(0 255 102 / 0.8);
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 0;
+  padding: 16px 18px 18px;
+  gap: 12px;
+  align-items: center;
+  border-top: 2px solid var(--lab-ink);
+  background: var(--lab-card);
+}
+
+.btn--play,
+.btn--eject {
+  font-family: var(--lab-heavy);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 0;
+  border: 2px solid var(--lab-ink);
+  box-shadow: 4px 4px 0 var(--lab-ink);
+  transition: transform 80ms linear, box-shadow 80ms linear;
+}
+
+.btn--play {
+  flex: 1;
+  height: 46px;
+  background: var(--lab-red);
+  color: #ffffff;
+}
+
+.btn--eject {
+  width: 60px;
+  height: 46px;
+  background: var(--lab-blue);
+  color: #ffffff;
+}
+
+.btn--play:active:not(:disabled),
+.btn--eject:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--lab-ink);
+}
+
+.btn:disabled {
+  background: #b9bdb7;
+  color: #6d716b;
+  box-shadow: 4px 4px 0 #6d716b;
+  border-color: #6d716b;
+}
+
+.btn--play.is-launching {
+  background: repeating-linear-gradient(
+    -45deg,
+    #111111 0 10px,
+    var(--lab-red) 10px 20px
+  );
+}
+
+/* Dark ink on light card, so the ring has to be dark too. */
+.btn:focus-visible,
+body.is-gamepad :focus {
+  outline: 3px solid var(--lab-blue);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--lab-paper);
+  color: var(--lab-muted);
+}
+
+#placeholder-initials {
+  color: var(--lab-ink);
+  font-family: var(--lab-heavy);
+}
+
+.pad-badge {
+  border-radius: 0;
+  background: var(--lab-red);
+  color: #ffffff;
+}

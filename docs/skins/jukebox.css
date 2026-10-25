@@ -1,0 +1,323 @@
+/* ==========================================================================
+   Jukebox — a wheel of covers, turning around the one in front.
+
+   The layout: a horizontal track with `perspective`, where the selected cover
+   faces you at full size and everything else turns away from it. The trick is
+   the sibling combinator — `[aria-selected="true"] ~ .game-row` is every row
+   *after* the selected one, so those turn one way and the rest turn the other,
+   which is what makes it read as a wheel rather than a row of tilted cards.
+
+   Left and right are the keys here; the launcher measures the row width, so
+   the pad walks the wheel without the skin saying anything.
+
+   Ported from a design written against a different set of class names.
+   ========================================================================== */
+
+:root {
+  --skin-width: 780;
+  --skin-height: 520;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: none;
+
+  --accent: #ff0055;
+  --accent-ink: #ffffff;
+  --radius: 10px;
+
+  --jb-bg: #0b0710;
+  --jb-ink: #ffffff;
+  --jb-muted: #9a8fae;
+  --jb-hot: #ff0055;
+  --jb-face: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
+
+#card {
+  background: var(--jb-bg);
+  color: var(--jb-ink);
+  font-family: var(--jb-face);
+  border-radius: 10px;
+}
+
+#face {
+  border-radius: 10px;
+}
+
+/* The hero of whatever is in front, thrown out of focus behind the wheel. */
+#plate img {
+  filter: brightness(0.3) saturate(1.4) blur(3px);
+  transform: scale(1.06);
+}
+
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: 0;
+  background: radial-gradient(
+    70% 55% at 50% 46%,
+    rgb(11 7 16 / 0.1) 0%,
+    rgb(11 7 16 / 0.72) 55%,
+    var(--jb-bg) 100%
+  );
+}
+
+#cart-mark {
+  max-height: 24px;
+  opacity: 0.55;
+}
+
+/* ------------------------------------------------------------- the chrome */
+
+#chrome {
+  height: 44px;
+  padding: 0 14px 0 0;
+  align-items: center;
+}
+
+#chrome .icon-btn {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: var(--jb-ink);
+}
+
+#chrome .icon-btn:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+
+#chrome .icon-btn--close:hover {
+  background: var(--jb-hot);
+  border-color: var(--jb-hot);
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 44px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#eyebrow {
+  order: -3;
+  flex: none;
+  margin: 0;
+  padding: 0 0 6px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--jb-muted);
+}
+
+/* Named above the wheel, centred over the cover that is facing you. */
+#game-title {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 0 24px 22px;
+  text-align: center;
+  font-family: var(--jb-face);
+  --title-size: 28px;
+  --title-stretch: 100%;
+  --title-tracking: -0.01em;
+  --title-leading: 1.1;
+  font-weight: 700;
+  text-transform: none;
+  color: var(--jb-ink);
+  text-shadow: 0 4px 24px rgb(0 0 0 / 0.9);
+}
+
+#notice {
+  order: -1;
+  padding: 0 24px 10px;
+  text-align: center;
+  color: var(--jb-muted);
+}
+
+/* ----------------------------------------------------------------- the wheel */
+
+#game-list {
+  flex: none;
+  height: 260px;
+  max-height: none;
+  margin: 0;
+  padding: 0 calc(50% - 90px);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  perspective: 800px;
+  scrollbar-width: none;
+}
+
+#game-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Every cover starts turned away and dim. */
+.game-row {
+  flex: 0 0 150px;
+  display: block;
+  padding: 0 8px;
+  gap: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  scroll-snap-align: center;
+  opacity: 0.45;
+  transform: rotateY(28deg) scale(0.84);
+  transform-origin: center center;
+  transition: transform 400ms cubic-bezier(0.25, 1, 0.5, 1), opacity 400ms ease;
+}
+
+/* Everything after the one in front turns the other way, so the two halves of
+   the wheel lean towards each other instead of all leaning left. */
+.game-row[aria-selected="true"] ~ .game-row {
+  transform: rotateY(-28deg) scale(0.84);
+}
+
+.game-row:hover {
+  opacity: 0.75;
+}
+
+/* The one in front: square on, larger, and the only lit thing. */
+.game-row[aria-selected="true"] {
+  opacity: 1;
+  transform: rotateY(0deg) scale(1.22);
+  z-index: 5;
+  box-shadow: none;
+}
+
+.game-row__cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 16px 30px rgb(0 0 0 / 0.7);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  box-shadow:
+    0 0 34px rgb(255 0 85 / 0.5),
+    0 0 0 2px var(--jb-hot),
+    0 20px 40px rgb(0 0 0 / 0.8);
+}
+
+.game-row__cover--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1226;
+  color: var(--jb-muted);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* The wheel is covers. The names are above it, one at a time. */
+.game-row__body,
+.game-row__dot {
+  display: none;
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 24px 0 0;
+  padding: 0 24px 22px;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Play is wrapped in `#play-ring`, and the ring is the flex child — it is
+   `flex: 1` in the base, so it swallows the row's free space and the
+   `justify-content` above has nothing left to centre. */
+#play-ring {
+  flex: 0 0 auto;
+}
+
+.btn--play {
+  flex: 0 0 auto;
+  width: 220px;
+  height: 50px;
+  border-radius: 999px;
+  font-family: var(--jb-face);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--jb-ink);
+  background: var(--jb-hot);
+  border: 0;
+  box-shadow: 0 0 30px rgb(255 0 85 / 0.45);
+}
+
+.btn--play:hover:not(:disabled) {
+  box-shadow: 0 0 44px rgb(255 0 85 / 0.65);
+}
+
+.btn--eject {
+  width: 52px;
+  height: 50px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  color: var(--jb-ink);
+}
+
+.btn--eject:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.btn:disabled {
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: rgb(255 255 255 / 0.3);
+  box-shadow: none;
+}
+
+/* A wheel that turns is the whole idea, so the turning stops but nothing else
+   does when the machine has been asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .game-row {
+    transition: opacity 120ms ease;
+    transform: none;
+  }
+
+  .game-row[aria-selected="true"],
+  .game-row[aria-selected="true"] ~ .game-row {
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--jb-bg);
+  color: var(--jb-muted);
+}
+
+#placeholder-initials {
+  color: var(--jb-hot);
+}
+
+.pad-badge {
+  background: var(--jb-hot);
+  color: var(--jb-ink);
+}

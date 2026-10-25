@@ -1,0 +1,144 @@
+# Maintainer: HarryBMa <harry.malmgren@gmail.com>
+#
+# Builds from the tagged source.
+#
+# What this package installs, and why it is the rootless half:
+#
+# The udev route in `linux/install.sh` writes a systemd unit with `User=` set to
+# the person who ran the installer. A package cannot do that — there is no such
+# person at build time, and one machine may have several. So the package ships
+# the other shape of install: `pc-gamepak-watcher` as a systemd *user* service,
+# which the user enables once. It blocks in poll() on the mount table, costs
+# about 2 MB resident, and needs no root and no udev rule.
+#
+# The udev files are installed as documentation under
+# /usr/share/doc/pc-gamepak/system-install/ for anyone who wants the
+# zero-resident route and is willing to run the script by hand.
+
+pkgname=pc-gamepak
+pkgver=1.2.0
+pkgrel=1
+pkgdesc="Turn removable storage into physical game cartridges"
+arch=('x86_64')
+url="https://github.com/HarryBMa/pc-gamepak"
+license=('MIT')
+# webkit2gtk-4.1 is the webview the launcher draws in; gtk3 and librsvg come
+# with it but are linked directly, so they are named directly.
+# udisks2 provides the udisksctl the launcher's Eject uses, and is what mounts
+# a cartridge on a desktop that automounts at all.
+# xdg-utils provides xdg-open, which is how a steam:// URI reaches Steam.
+# polkit provides the pkexec that mkfs and fstrim are run under.
+depends=(
+  'webkit2gtk-4.1'
+  'gtk3'
+  'librsvg'
+  'exfatprogs'
+  'polkit'
+  'udisks2'
+  'xdg-utils'
+  'pcsclite'
+)
+optdepends=(
+  'steam: play Steam games from the cartridge'
+  'btrfs-progs: format cartridges to btrfs instead of exFAT'
+  'udiskie: automount cartridges on desktops that do not do it themselves'
+)
+# No 'cargo': the rust package already provides it, and naming both can pull in
+# a second toolchain.
+# ring, which rustls pulls in for the SteamGridDB HTTPS calls, ships hand-written
+# assembly. makepkg enables LTO globally (OPTIONS=(... lto ...)), and -flto cannot
+# see through those .S objects, so the link fails on a few hundred
+# "undefined reference to ring_core_0_17_*". Nothing here benefits enough from LTO
+# to be worth carrying that.
+options=(!lto)
+
+makedepends=('rust' 'pkgconf')
+install="$pkgname.install"
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('595a28d848936ab5b8cc551bebe719e5ca52e0770ec976b60b3f9e49fc547848')
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+
+  # Keeps the build path out of the binary. makepkg still warns once about
+  # "Package contains reference to $srcdir": tauri-build captures
+  # CARGO_MANIFEST_DIR through env!(), which is a string baked in at expansion
+  # time and so out of reach of --remap-path-prefix. It is never read at
+  # runtime — cosmetic, and not worth patching Tauri over.
+  export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=$srcdir=/usr/src/$pkgname"
+
+  # The frontend is plain static files (tauri.conf.json points frontendDist at
+  # ../app), so there is no npm step — cargo is the whole build.
+  ( cd tauri-ui/src-tauri && cargo build --release --locked )
+
+  # The watcher is what makes an installed package notice a cartridge at all.
+  # Building only the launcher was the bug that shipped a program that waits
+  # for an event nothing was listening for.
+  ( cd watcher && cargo build --release --locked )
+
+  # verify-cart re-reads a cartridge against its manifest; build-cart writes one
+  # without the GUI. Both are useful on a headless box and cost little.
+  ( cd core && cargo build --release --locked --bins )
+}
+
+check() {
+  cd "$srcdir/$pkgname-$pkgver/core"
+  cargo test --release --locked
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+
+  install -Dm755 tauri-ui/src-tauri/target/release/pc-gamepak \
+    "$pkgdir/usr/bin/pc-gamepak"
+  install -Dm755 watcher/target/release/pc-gamepak-watcher \
+    "$pkgdir/usr/bin/pc-gamepak-watcher"
+  install -Dm755 core/target/release/verify-cart "$pkgdir/usr/bin/pc-gamepak-verify"
+  install -Dm755 core/target/release/build-cart "$pkgdir/usr/bin/pc-gamepak-build"
+
+  install -Dm755 linux/eject.sh "$pkgdir/usr/bin/pc-gamepak-eject"
+
+  # The user unit ships with ExecStart pointing at ~/.local/bin, which is where
+  # the rootless script puts the binary. Packaged, it lives in /usr/bin.
+  sed 's|%h/\.local/bin/pc-gamepak-watcher|/usr/bin/pc-gamepak-watcher|' \
+    linux/pc-gamepak-watcher.service \
+    > "$srcdir/pc-gamepak-watcher.service"
+  # Enabling the watcher pulls this in (it Wants= it), so automount on a desktop
+  # that lacks it costs the user no extra command.
+  install -Dm644 linux/pc-gamepak-automount.service \
+    "$pkgdir/usr/lib/systemd/user/pc-gamepak-automount.service"
+
+  install -Dm644 "$srcdir/pc-gamepak-watcher.service" \
+    "$pkgdir/usr/lib/systemd/user/pc-gamepak-watcher.service"
+
+  # Without these the window carries the desktop's generic fallback icon
+  # everywhere it appears, because nothing tells the desktop which app_id is
+  # ours or what it looks like.
+  install -Dm644 linux/pc-gamepak.desktop \
+    "$pkgdir/usr/share/applications/pc-gamepak.desktop"
+  install -Dm644 tauri-ui/src-tauri/icons/128x128.png \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/pc-gamepak.png"
+  install -Dm644 tauri-ui/src-tauri/icons/32x32.png \
+    "$pkgdir/usr/share/icons/hicolor/32x32/apps/pc-gamepak.png"
+
+  # The udev route, for anyone who wants nothing resident. Not installed live:
+  # the units carry a __USERNAME__ placeholder that only install.sh can fill in.
+  install -Dm644 "linux/pc-gamepak@.service" \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/pc-gamepak@.service"
+  install -Dm644 "linux/pc-gamepak-remove@.service" \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/pc-gamepak-remove@.service"
+  install -Dm644 linux/99-pc-gamepak.rules \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/99-pc-gamepak.rules"
+  install -Dm755 linux/gamepak-launcher-helper.sh \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/gamepak-launcher-helper.sh"
+  install -Dm755 linux/gamepak-remove-helper.sh \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/gamepak-remove-helper.sh"
+  install -Dm755 linux/install.sh \
+    "$pkgdir/usr/share/doc/$pkgname/system-install/install.sh"
+
+  install -Dm644 cartridge.conf.example \
+    "$pkgdir/usr/share/doc/$pkgname/cartridge.conf.example"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 docs/MANUAL.md "$pkgdir/usr/share/doc/$pkgname/MANUAL.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,359 @@
+/* ==========================================================================
+   Akihabara — a slot loader. Notched panels, neon trim, a kanji state badge.
+
+   Art slots: covers in the rail, hero behind it, no logo. The list runs down
+   the window as a stack of loading bays rather than across it, which is what
+   separates this from `cyberpunk` (a split).
+
+   Ported from a design written against a different set of class names.
+   Orbitron and Rajdhani are not system fonts and `font-src 'self'` forbids
+   fetching them, so this uses a condensed system stack.
+   ========================================================================== */
+
+:root {
+  --skin-width: 460;
+  --skin-height: 640;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: none;
+
+  --accent: #ff0055;
+  --accent-ink: #0a0b10;
+  --radius: 0px;
+
+  --ak-bg: #0a0b10;
+  --ak-panel: #141622;
+  --ak-line: #2a2e45;
+  --ak-red: #ff0055;
+  --ak-cyan: #00ffe1;
+  --ak-ink: #ffffff;
+  --ak-muted: #626890;
+  --ak-face: "Bahnschrift", "Segoe UI Variable Text", "Segoe UI", system-ui,
+    sans-serif;
+}
+
+#card {
+  background: var(--ak-bg);
+  color: var(--ak-ink);
+  font-family: var(--ak-face);
+  border: 2px solid var(--ak-line);
+  border-radius: 0;
+  box-shadow: 0 0 40px rgb(255 0 85 / 0.12);
+}
+
+#face {
+  border-radius: 0;
+}
+
+#plate img {
+  filter: brightness(0.34) saturate(1.3);
+}
+
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(10 11 16 / 0.55) 0%,
+    rgb(10 11 16 / 0.86) 60%,
+    var(--ak-bg) 100%
+  );
+}
+
+#cart-mark {
+  display: none;
+}
+
+/* ------------------------------------------------------------- the bar */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 44px;
+  background: var(--ak-panel);
+  border-bottom: 2px solid var(--ak-red);
+}
+
+#chrome {
+  height: 44px;
+  padding: 0 12px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+/* Notched, like every panel in this skin. */
+#chrome .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 0;
+  background: transparent;
+  border: 2px solid var(--ak-cyan);
+  color: var(--ak-cyan);
+  clip-path: polygon(
+    6px 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    0 100%,
+    0 6px
+  );
+}
+
+#chrome .icon-btn:hover {
+  background: var(--ak-cyan);
+  color: var(--ak-bg);
+  box-shadow: 0 0 14px var(--ak-cyan);
+}
+
+#chrome .icon-btn--close {
+  border-color: var(--ak-red);
+  color: var(--ak-red);
+}
+
+#chrome .icon-btn--close:hover {
+  background: var(--ak-red);
+  color: var(--ak-ink);
+  box-shadow: 0 0 14px var(--ak-red);
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 44px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 16px 18px 0;
+  font-family: var(--ak-face);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ak-cyan);
+  text-shadow: 0 0 10px rgb(0 255 225 / 0.6);
+}
+
+#game-title {
+  order: -1;
+  flex: none;
+  margin: 0;
+  padding: 4px 18px 14px;
+  font-family: var(--ak-face);
+  --title-size: 24px;
+  --title-stretch: 100%;
+  --title-tracking: 0.06em;
+  --title-leading: 1.15;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ak-ink);
+  text-shadow: 0 0 20px rgb(255 0 85 / 0.5);
+}
+
+#notice {
+  padding: 0 18px 8px;
+  color: var(--ak-red);
+}
+
+/* ------------------------------------------------------------ the loading bays */
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0;
+  padding: 0 18px 14px;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ak-line) transparent;
+}
+
+/* Each row is a slot: notched top-right, lit down the left edge. */
+.game-row {
+  position: relative;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 0;
+  border-left: 4px solid var(--ak-line);
+  border-radius: 0;
+  background: linear-gradient(
+    90deg,
+    rgb(255 0 85 / 0.04) 0%,
+    rgb(20 22 34 / 0.85) 100%
+  );
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.game-row:hover {
+  border-left-color: var(--ak-cyan);
+}
+
+.game-row[aria-selected="true"] {
+  border-left-color: var(--ak-red);
+  background: linear-gradient(
+    90deg,
+    rgb(255 0 85 / 0.22) 0%,
+    rgb(20 22 34 / 0.9) 100%
+  );
+  box-shadow: none;
+}
+
+/* The state badge the design called for, on the row that is loaded. */
+.game-row[aria-selected="true"] .game-row__title::after {
+  content: " [挿入済]";
+  font-size: 0.72em;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ak-cyan);
+  text-shadow: 0 0 8px rgb(0 255 225 / 0.7);
+}
+
+.game-row__cover {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 0;
+  border: 1px solid var(--ak-line);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  border-color: var(--ak-red);
+}
+
+.game-row__cover--empty {
+  background: var(--ak-panel);
+  color: var(--ak-cyan);
+  font-weight: 700;
+}
+
+.game-row__title {
+  font-family: var(--ak-face);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ak-ink);
+}
+
+.game-row__meta {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ak-muted);
+}
+
+.game-row__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  background: var(--ak-line);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: var(--ak-cyan);
+  box-shadow: 0 0 10px var(--ak-cyan);
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 0;
+  padding: 14px 18px 18px;
+  gap: 12px;
+  align-items: center;
+  background: var(--ak-panel);
+  border-top: 2px solid var(--ak-line);
+}
+
+.btn--play,
+.btn--eject {
+  font-family: var(--ak-face);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 0;
+  background: transparent;
+  border: 2px solid var(--ak-cyan);
+  color: var(--ak-cyan);
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+  transition: background-color 140ms ease, color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.btn--play {
+  flex: 1;
+  height: 46px;
+  font-size: 14px;
+}
+
+.btn--eject {
+  width: 68px;
+  height: 46px;
+  font-size: 11px;
+  border-color: var(--ak-red);
+  color: var(--ak-red);
+}
+
+.btn--play:hover:not(:disabled) {
+  background: var(--ak-cyan);
+  color: var(--ak-bg);
+  box-shadow: 0 0 15px var(--ak-cyan);
+}
+
+.btn--eject:hover:not(:disabled) {
+  background: var(--ak-red);
+  color: var(--ak-ink);
+  box-shadow: 0 0 15px var(--ak-red);
+}
+
+.btn:disabled {
+  border-color: var(--ak-line);
+  color: var(--ak-muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+.btn--play.is-launching {
+  background: rgb(0 255 225 / 0.16);
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--ak-bg);
+  color: var(--ak-muted);
+}
+
+#placeholder-initials {
+  color: var(--ak-cyan);
+}
+
+.pad-badge {
+  border-radius: 0;
+  background: var(--ak-red);
+  color: var(--ak-ink);
+}

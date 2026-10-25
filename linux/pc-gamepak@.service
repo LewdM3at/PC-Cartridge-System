@@ -1,0 +1,9 @@
+[Unit]
+Description=PC GamePak (%i)
+BindsTo=dev-%i.device
+After=dev-%i.device
+
+[Service]
+Type=oneshot
+User=__USERNAME__
+ExecStart=/usr/local/bin/pc-gamepak-helper %i

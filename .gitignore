@@ -1,0 +1,26 @@
+# Build output
+target/
+node_modules/
+dist/
+.tauri/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local tool state, per machine and not per project
+.claude/settings.local.json
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/critique/
+context.log
+
+# The watcher and launcher write these beside themselves when run from a
+# checkout rather than from an install.
+*.log
+
+# Release artefacts pulled down for checking a manifest's checksum
+*.sha256
+*.zip
+*.tar.gz

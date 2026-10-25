@@ -1,0 +1,7 @@
+[Unit]
+Description=PC GamePak Removal Handler (%i)
+
+[Service]
+Type=oneshot
+User=__USERNAME__
+ExecStart=/usr/local/bin/pc-gamepak-remove %i

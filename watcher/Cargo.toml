@@ -1,0 +1,52 @@
+[package]
+name = "pc-gamepak-watcher"
+version = "1.2.0"
+edition = "2021"
+description = "Watches cartridge inserts and PC/SC NFC readers"
+license = "MIT"
+
+# Deliberately almost no dependencies: this process is resident for the whole
+# login session, so everything it links is RAM that never comes back. libc is
+# the exception that proves it — bindings only, and std already links the C
+# library on Linux, so poll() and kill() cost declarations and nothing else.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(any(target_os = "linux", target_os = "windows"))'.dependencies]
+pcsc = "2.9"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+    "Win32_UI_WindowsAndMessaging",
+    # RegisterClassW and WNDCLASSW live behind this one, because WNDCLASSW
+    # carries HBRUSH and HICON. The watcher's window is never painted, but the
+    # struct still has to exist to register the class.
+    "Win32_Graphics_Gdi",
+    # CreateMutexW, for the single-instance guard. Takes a
+    # *const SECURITY_ATTRIBUTES, hence Win32_Security too, even though the
+    # watcher passes null.
+    "Win32_System_Threading",
+    "Win32_Security",
+    # Shell_NotifyIconW and NOTIFYICONDATAW, for the notification-area icon.
+    "Win32_UI_Shell",
+    # GetLogicalDrives and GetVolumeInformationW, to name the cartridges the
+    # tray menu offers to open.
+    "Win32_Storage_FileSystem",
+    # CoInitializeEx, GetRunningObjectTable and CreateClassMoniker, to register
+    # the object AutoPlay asks before opening a cartridge in Explorer.
+    "Win32_System_Com",
+] }
+
+# Host-gated: rc.exe ships with the MSVC toolchain, so this applies when
+# building on Windows, which is where the watcher is built.
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true

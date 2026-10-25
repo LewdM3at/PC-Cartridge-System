@@ -1,0 +1,62 @@
+# Arch packages do not enable services for you, and a user service could not be
+# enabled from here anyway — there is no user at pacman time. So this says what
+# to run, once, and then gets out of the way.
+
+post_install() {
+  cat <<'EOF'
+
+PC GamePak is installed. One command to start watching for cartridges:
+
+    systemctl --user enable --now pc-gamepak-watcher.service
+
+That runs a small process (about 2 MB) that wakes when a drive is mounted,
+checks it for a cartridge.conf, and opens the launcher on it. No root, no udev
+rule.
+
+A cartridge nothing mounted is a cartridge the watcher never hears about, and
+not every desktop automounts one: GNOME does, KDE asks first unless told
+otherwise, and a bare window manager does nothing at all. So the watcher pulls
+in pc-gamepak-automount.service, which runs udiskie against the same udisks2
+your desktop uses. Install udiskie and it just works:
+
+    pacman -S --asdeps udiskie
+
+If your desktop already automounts, skip it — the Want fails quietly and
+nothing else changes.
+
+Write a cartridge with the wizard, from your menu or:
+
+    pc-gamepak --create
+
+Check one against its manifest:
+
+    pc-gamepak-verify /run/media/you/CARTRIDGE
+
+If you would rather have nothing resident, the udev route is in
+/usr/share/doc/pc-gamepak/system-install/ — it needs root and bakes your
+username into a systemd unit, which is why it is not what this package installs.
+
+EOF
+}
+
+post_upgrade() {
+  cat <<'EOF'
+
+If the watcher is enabled, restart it to pick up the new binary:
+
+    systemctl --user restart pc-gamepak-watcher.service
+
+EOF
+}
+
+pre_remove() {
+  # Best effort: the service belongs to a user, and pacman runs as root, so
+  # this cannot reach into every session. Told, rather than done silently.
+  cat <<'EOF'
+
+Remember to stop the watcher in each user session that enabled it:
+
+    systemctl --user disable --now pc-gamepak-watcher.service
+
+EOF
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.tauri.app/config/v2/capability.json",
+  "identifier": "default",
+  "description": "Both windows talk only to this app's own commands and manage their own visibility, including standing aside to the taskbar when a game starts. The webview gets no filesystem, shell or HTTP permission; all disk and process work happens in Rust.",
+  "windows": [
+    "main",
+    "create"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-close",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-minimize",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-set-size"
+  ]
+}

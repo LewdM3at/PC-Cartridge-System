@@ -1,0 +1,4 @@
+# A USB barcode scanner is a keyboard. Hand it to the user at the seat, so the
+# watcher (running as that user) can take it for GamePak scans. uaccess is
+# applied by 73-seat-late.rules, so this file has to sort before it.
+SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", ENV{ID_SERIAL}=="*[Bb]arcode*|*[Ss]canner*", TAG+="uaccess"

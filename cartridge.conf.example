@@ -1,0 +1,247 @@
+# cartridge.conf
+#
+# Put this file at the root of the cartridge. It is the only file a cartridge
+# needs — there are no launch scripts to write and nothing to allowlist.
+#
+# When the drive is plugged in, the launcher reads this, shows the cover art and
+# the title, and waits. Nothing runs until you press Play.
+#
+# There are two formats: single-game (simple key=value) and multi-game bundle
+# (uses [collection] + [game] sections).
+#
+# ===== Single-game format =====
+#
+# ----- Keys -----
+#
+# executable  (required)
+#   What Play should start. Either:
+#     - a URI the OS already knows how to handle:
+#       steam:// heroic:// gog:// epic:// playnite:// lutris:// http:// https://
+#     - a path to a file on the cartridge, relative to this one
+#       (Game\bin\MyGame.exe on Windows, Game/bin/start.sh on Linux)
+#
+# title  (optional)
+#   The name shown in the launcher. Defaults to "Unknown Game".
+#
+# cover  (optional)
+#   Cover art, relative to this file. PNG, JPG, WEBP, AVIF or GIF.
+#   Portrait art at 3:4 fills the window exactly; anything else is centre-cropped.
+#   Must stay on the cartridge — ..\ paths are refused — and is capped at 8 MB.
+#   If omitted, the launcher looks for cover.png, cover.jpg, poster.png or box.png
+#   at the root.
+#
+# platform  (optional)
+#   What the cartridge is for, so a front-end that draws the physical thing —
+#   a 3D shelf, a cartridge slot on a phone, a console-style UI — can draw the
+#   right shell. Defaults to PC. Compared without regard to case. Front-ends
+#   should recognise these names, and draw anything else as they like:
+#
+#     PC       Windows, Linux or Steam Deck game (the default)
+#     NES  SNES  N64  GameCube  Wii  WiiU  Switch
+#     GB  GBC  GBA  NDS  3DS  VirtualBoy
+#     MasterSystem  Genesis  SegaCD  32X  Saturn  Dreamcast  GameGear
+#     PS1  PS2  PS3  PSP  Vita
+#     Xbox  Xbox360
+#     Atari2600  Atari7800  Lynx  Jaguar
+#     TurboGrafx16  NeoGeo  NeoGeoPocket  WonderSwan
+#     Arcade  DOS  C64  Amiga  MSX
+#
+#   An emulated game's cartridge says the system it emulates, and its
+#   executable is the ROM: platform=SNES with executable=snes/Game.sfc. The
+#   launcher opens a ROM with whatever the desktop plays that file type with.
+#   The wizard puts ROMs in ES-DE's folder for the system (snes/, gba/, psx/...)
+#   and writes snes/gamelist.xml and metadata.pegasus.txt beside them, so
+#   Pegasus and ES-DE can list the cartridge when pointed at the drive.
+#
+# save  (optional, repeatable)
+#   Where this game keeps its saves on the host, so they can travel with the
+#   cartridge. Written as
+#
+#     save=Label|{token}/rest/of/the/path
+#
+#   The label is optional; without one the last part of the path names it.
+#   Repeat the key for a game that keeps saves in more than one place.
+#
+#   The {token} is required and is the point: a save path cannot be written
+#   down literally, because the three platforms disagree about where it goes.
+#   Each token resolves on the host that reads it:
+#
+#     {home}          the user's home directory
+#     {documents}     Documents (the localised name, on Linux)
+#     {savedgames}    Saved Games
+#     {appdata}       Windows %APPDATA%    · macOS ~/Library/Application Support
+#                     · Linux $XDG_CONFIG_HOME (~/.config)
+#     {localappdata}  Windows %LOCALAPPDATA% · macOS ~/Library/Application Support
+#                     · Linux $XDG_DATA_HOME (~/.local/share)
+#     {appsupport}    as {localappdata}, named for the macOS case
+#     {prefs}         macOS ~/Library/Preferences · %APPDATA% · ~/.config
+#     {steamuserdata} Steam's userdata/<account>, where Steam Cloud saves live:
+#                     {steamuserdata}/<app id>/remote. Only where Steam is.
+#     {registry}      Windows only: a registry key under HKCU\Software, as
+#                     {registry}/HKCU/Software/<company>/<game>. Carried as an
+#                     exported .reg file; write it on a save.windows= line.
+#
+#   A path that resolves to a whole home, Documents or AppData directory is
+#   refused: a save declaration has to name one game's saves inside one of
+#   them, not the directory itself.
+#
+#   Where one platform genuinely differs — a Windows game whose saves are
+#   inside a Proton prefix, say — write a platform line as well. Where both
+#   exist, the platform one wins on that platform and the plain one covers the
+#   rest:
+#
+#     save=Saves|{appdata}/Foo/Saves
+#     save.linux=Saves|{home}/.steam/steam/steamapps/compatdata/1/pfx/Foo
+#
+#   Syncing is off until the user turns it on. When it is on, the two copies
+#   are compared against what this machine last saw of each; only the side
+#   that changed is copied, both changing is a conflict that writes nothing,
+#   and whatever is about to be replaced is moved aside and kept first.
+#
+# portable_home  (optional, cartridge-wide)
+#   yes to give a game the cartridge *carries* its own home directory, at
+#   .gamepak/home/ on the drive. Every save it writes lands there, and no
+#   save= line is needed for it at all.
+#
+#   This is the better mechanism where it applies, because nothing has to be
+#   researched or declared and it cannot miss a path the game uses. It applies
+#   only to a game stored on the cartridge and started by the launcher itself:
+#   a game the cartridge points at with a steam:// URI is started by Steam, in
+#   Steam's environment, which nothing here can set.
+#
+#   Off unless asked for. Changing where a game thinks home is can stop it
+#   working — a game that expects its own settings will find none and start at
+#   its defaults — and only the person making the cartridge knows whether
+#   theirs minds.
+#
+#   Set on Linux: HOME and the XDG_*_HOME directories. On macOS: HOME, which
+#   ~/Library follows. On Windows: USERPROFILE, APPDATA and LOCALAPPDATA.
+#   The cache is deliberately left on the host: it is rebuildable, it is the
+#   largest thing a game writes, and a shader cache on removable flash costs
+#   write cycles for nothing.
+#
+#   One caveat, and it is the filesystem's: exFAT cannot hold a symlink, so a
+#   game that makes one inside its config directory will fail to. btrfs and
+#   NTFS cartridges have no such problem.
+#
+# shader_cache  (optional, cartridge-wide)
+#   drive to carry this game's compiled shaders on the cartridge, host (the
+#   default) to leave them where they are.
+#
+#   A game's first hour on a new machine is its worst: every pipeline it uses
+#   has to be compiled before it can be drawn, and that is the stutter people
+#   blame on the drive. The cartridge has just carried 60 GB of the game across
+#   the room; carrying the compiled shaders too costs a few hundred megabytes
+#   and removes the problem.
+#
+#   It is per cartridge because it is a trade against the drive's speed. On a
+#   fast NVMe cartridge, carrying a warm cache is free. On a cheap USB stick, a
+#   few hundred megabytes copied at insert and again at eject is a wait nobody
+#   asked for, to avoid a stutter they might not notice. Only the person making
+#   the cartridge knows which drive it is.
+#
+#   Only Steam games are covered — the cache is Steam's own
+#   steamapps/shadercache/<appid>, found through the appid in the steam://
+#   launch target. Mesa's and NVIDIA's own caches are shared by every program
+#   on the machine rather than per game, so no cartridge can carry its share.
+#
+#   Insert copies the cartridge's cache over only if it is the newer one, and
+#   eject copies this machine's back. There is no conflict to resolve: it is a
+#   cache, so either side is correct and the newer is only better.
+#
+# savemode  (optional, cartridge-wide)
+#   copy (the default) or link. `link` replaces the host's save directory with
+#   a symlink onto the cartridge, so there is only ever one copy. It is faster
+#   and exact, and it costs two things: Windows refuses symlinks to an
+#   unprivileged process unless Developer Mode is on, and a drive pulled
+#   without ejecting leaves the game's save directory dangling. Use copy
+#   unless you have a reason.
+#
+# ----- Example -----
+
+executable=steam://rungameid/1091500
+title=Cyberpunk 2077
+cover=cover.jpg
+save=Saves|{documents}/CD Projekt Red/Cyberpunk 2077
+
+# ----- A carried game, which needs no save line at all -----
+#
+# executable=Games/Tunic/start.sh
+# title=Tunic
+# portable_home=yes
+#
+# ----- A Steam game on a fast drive, carrying its shaders -----
+#
+# executable=steam://rungameid/2322010
+# title=God of War Ragnarök
+# shader_cache=drive
+
+# ----- More examples -----
+#
+# Heroic (GOG / Epic)
+#   executable=heroic://launch/gog/1207658921
+#
+# A game that ships on the cartridge itself (Windows)
+#   executable=Game\bin\MyGame.exe
+#
+# A native Linux game on the cartridge
+#   executable=Game/bin/start.sh
+#
+#
+# ===== Multi-game bundle format =====
+#
+# A [collection] section defines the overall cartridge metadata (required).
+# Each [game] section defines one game (at least two needed for bundle mode).
+#
+# [collection] keys:
+#   title     - Collection name shown in the launcher (required)
+#   cover     - Collection cover art, relative to this file (optional)
+#   platform  - What the cartridge is for (optional); each game's unless it
+#               says otherwise
+#
+# [game] keys:
+#   title       - Game name shown in the game list (required)
+#   executable  - What Play should start for this game (required)
+#   cover       - Per-game thumbnail, relative to this file (optional)
+#   platform    - This game's platform, if not the collection's (optional)
+#   save        - Where that game keeps its saves (optional, repeatable).
+#                 Same form as above; a save line inside a [game] section
+#                 belongs to that game.
+#
+# ----- Bundle example -----
+#
+# [collection]
+# title=God of War Collection
+# cover=collection.jpg
+#
+# [game]
+# title=God of War (2018)
+# executable=steam://rungameid/310970
+# cover=cover_0.jpg
+#
+# [game]
+# title=God of War Ragnarök
+# executable=steam://rungameid/2322010
+# cover=cover_1.jpg
+# save=Ragnarök|{savedgames}/God of War Ragnarok
+#
+# Steam games are stored under steamapps/ as usual.
+# GOG / other games are stored under Games/<Title>/ for organisation.
+#
+# ----- Written for you -----
+#
+# The launcher keeps each game's play history here, beside its title, and
+# rewrites these keys after every session. HowLongToBeat's estimate is added
+# when the cartridge is written, if that lookup is switched on. Times are
+# seconds, dates are UTC. Everything else in this file is left alone.
+#
+# playtime=154800
+# launches=31
+# first_played=2026-03-02T19:04:11Z
+# last_played=2026-09-26T18:00:00Z
+# last_host=DESKTOP-7Q2
+# session=2026-09-26T18:00:00Z|5400|DESKTOP-7Q2
+# hltb_id=10270
+# hltb_main=97200
+# hltb_extra=154800
+# hltb_complete=226800

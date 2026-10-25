@@ -1,0 +1,318 @@
+/* ==========================================================================
+   Shared design tokens — the launcher popup and the create wizard are the same
+   product, so the palette, the type and the easing live in one place.
+
+   Neutrals are tinted warm (hue 65) rather than pure grey, and the single
+   accent is replaced at runtime by a colour sampled from the cover art.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("fonts/archivo-latin-var.woff2") format("woff2-variations");
+  font-weight: 400 800;
+  font-stretch: 62% 125%;
+  /* The launcher's whole promise is being on screen the moment a cartridge
+     lands, so the title is never worth withholding while a font loads. */
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Spline Sans Mono";
+  src: url("fonts/spline-sans-mono-latin.woff2") format("woff2");
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+:root {
+  /* Native controls follow the page, not the desktop theme. On a light GTK
+     theme WebKitGTK drew dropdowns white, under text that is white here. */
+  color-scheme: dark;
+  --shell: oklch(0.155 0.005 65);
+  --panel: oklch(0.185 0.006 65);
+  --sunk: oklch(0.125 0.005 65);
+
+  --ink: oklch(0.97 0.006 75);
+  --ink-2: oklch(0.75 0.008 75);
+  /* 0.56 measured 4.0:1 on the panel — under AA for the option hints, which is
+     where the formatting warning and the Steam-close explanation live. */
+  --ink-3: oklch(0.635 0.008 75);
+
+  /* A step brighter than --ink-2, for secondary text that still has to read
+     first in its row. */
+  --ink-soft: oklch(0.86 0.008 75);
+
+  --hairline: oklch(1 0 0 / 0.16);
+  --hairline-mid: oklch(1 0 0 / 0.11);
+  --hairline-soft: oklch(1 0 0 / 0.075);
+
+  /* Tonal layers over the shell: a faint lift for raised rows, a well for
+     inset fields and cards. Depth is tone first, shadow second. */
+  --lift: oklch(1 0 0 / 0.04);
+  --well: oklch(0 0 0 / 0.26);
+
+  --accent: oklch(0.72 0.15 68);
+  --accent-ink: oklch(0.16 0.02 65);
+  --danger: oklch(0.68 0.19 27);
+  --good: oklch(0.76 0.15 145);
+
+  --radius: 0px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1); /* ease-out-quint */
+
+  /* Type scale. A cartridge is as often read from a couch as from a desk, so
+     11px is the floor: below it nothing is allowed to carry meaning. */
+  --text-label: 11px; /* uppercase labels, eyebrows, table headings */
+  --text-sm: 12px;    /* hints, metadata, notices */
+  --text: 12.5px;     /* the reading size for anything explanatory */
+  --text-md: 13px;    /* inputs and list rows */
+  --text-lg: 14px;
+  --text-xl: 19px;    /* the one heading a dialog gets */
+
+  /* Surfaces the browser would otherwise style for us. */
+  --select-bg: color-mix(in oklch, var(--accent) 34%, transparent);
+  --scroll-thumb: oklch(1 0 0 / 0.14);
+  --scroll-thumb-hover: oklch(1 0 0 / 0.24);
+}
+
+/* A dropdown's list is drawn by the toolkit, not the page, and only takes
+   solid colours: the see-through fills the closed selects use let the light
+   desktop theme show through. */
+select {
+  background-color: var(--sunk);
+}
+
+option,
+optgroup {
+  background-color: var(--panel);
+  color: var(--ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* `hidden` means hidden, whatever display a class gives the element. Without
+   this every component that sets `display` needed its own [hidden] rule, and
+   the one that was missed — the memory card button — showed on every
+   cartridge, doing nothing. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  /* The windows are opaque now, so this is the ground the card sits on rather
+     than a hole through to the desktop. It matters at the corners: DWM clips
+     them, and whatever is under the clip should be the app, not white. */
+  background: oklch(0.115 0 0);
+  font-family: "Archivo", ui-sans-serif, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  cursor: default;
+  /* Chrome and artwork are not documents; the diagnostic strings are, and they
+     opt back in with .selectable. */
+  user-select: none;
+}
+
+/* Paths, mount points and launch targets: the strings someone pastes into a
+   terminal or a bug report. */
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+::selection {
+  background: var(--select-bg);
+  color: var(--ink);
+}
+
+/* The scrollbars belong to the window, not to the platform. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--scroll-thumb);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: content-box;
+}
+
+/* Small caps label, used for section headings and eyebrows. */
+.eyebrow {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  font-stretch: 108%;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.mono {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Frameless-window chrome buttons. Sized for a thumb as well as a pointer:
+   the Steam Deck runs this on a touchscreen. */
+.icon-btn {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: oklch(0.14 0.004 65 / 0.5);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 130ms linear, color 130ms linear;
+}
+
+.icon-btn:hover {
+  background: oklch(0.14 0.004 65 / 0.82);
+  color: var(--ink);
+}
+
+.icon-btn:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Buttons. Play in the popup and Write here are the only filled surfaces. */
+.btn {
+  appearance: none;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-stretch: 106%;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 130ms var(--ease), background-color 130ms linear,
+    border-color 130ms linear, color 130ms linear;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+/* An author `display` beats the browser's [hidden] rule whatever the
+   specificity, so hiding a button has to be spelled out. */
+.btn[hidden] {
+  display: none;
+}
+
+.btn__key {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 3px 5px 2px;
+  border-radius: 2px;
+  opacity: 0.72;
+}
+
+.btn--primary {
+  border: 0;
+  padding: 0 20px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.26);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--accent) 88%, white);
+}
+
+.btn--primary .btn__key {
+  background: oklch(0 0 0 / 0.18);
+}
+
+.btn--primary:disabled {
+  cursor: not-allowed;
+  background: oklch(0.3 0.005 65 / 0.85);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.btn--ghost {
+  padding: 0 17px;
+  border: 1px solid var(--hairline);
+  background: oklch(0.14 0.004 65 / 0.45);
+  color: var(--ink);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  border-color: oklch(1 0 0 / 0.32);
+  background: oklch(0.18 0.004 65 / 0.7);
+}
+
+.btn--ghost .btn__key {
+  background: oklch(1 0 0 / 0.1);
+}
+
+.btn--ghost:disabled {
+  cursor: not-allowed;
+  color: var(--ink-3);
+  border-color: var(--hairline-soft);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion takes the ornament away, not the feedback. Entrances and the
+   two looping indicators stop entirely; state changes keep a brief transition
+   so a press, a hover or a filling progress bar still reads as a change rather
+   than a jump cut. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 80ms !important;
+  }
+}

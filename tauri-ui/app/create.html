@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create cartridge</title>
+  <link rel="stylesheet" href="src/create.css" />
+</head>
+<body>
+  <!--
+    One screen: choose the media, choose the games, choose the artwork, and
+    watch the launcher being built on the right.
+
+    Every toggle lives in Settings rather than on a panel in the way, so this
+    window states answers instead of asking questions. Selection is always
+    multiple: one game makes a cartridge, three makes a multicartridge, and
+    there is no mode to enter.
+  -->
+  <main id="shell">
+    <header id="bar" data-tauri-drag-region>
+      <p id="bar-title" data-tauri-drag-region>
+        <span id="bar-pip" aria-hidden="true"></span>
+        <span id="bar-text">Create cartridge</span>
+      </p>
+      <div id="bar-actions">
+        <button id="btn-settings" class="icon-btn" type="button" aria-label="Settings"
+                title="Settings" aria-haspopup="dialog">
+          <!-- A cog. The rays-around-a-circle this used to be reads as a sun,
+               which is a brightness control everywhere else. -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round" width="15" height="15"
+               aria-hidden="true">
+            <circle cx="12" cy="12" r="3.1" />
+            <path d="M19.2 14.7a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.55V21a2 2 0 1 1-4 0v-.11a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1.03H3a2 2 0 1 1 0-4h.11a1.7 1.7 0 0 0 1.55-1.1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1.03-1.55V3a2 2 0 1 1 4 0v.11a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1.03H21a2 2 0 1 1 0 4h-.11a1.7 1.7 0 0 0-1.55 1.03z" />
+          </svg>
+        </button>
+        <button id="btn-close" class="icon-btn icon-btn--close" type="button"
+                aria-label="Close" title="Close — Esc">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="15" height="15" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="columns">
+      <!-- Three jobs, not three modes of one job. Create makes a cartridge and
+           asks as little as it can; Edit changes one that exists; Created is
+           the shelf this machine has written. The rail belongs to the first
+           two, because it is the same cartridge either way. -->
+      <nav id="sidebar" role="tablist" aria-orientation="vertical" aria-label="What to do">
+        <button id="tab-create" class="side-tab" type="button" role="tab"
+                aria-selected="true" aria-controls="panel-create">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" width="16" height="16" aria-hidden="true">
+            <path d="M10 4.5v11M4.5 10h11" />
+          </svg>
+          <span>Create</span>
+        </button>
+        <button id="tab-edit" class="side-tab" type="button" role="tab"
+                aria-selected="false" aria-controls="panel-edit" tabindex="-1">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+               aria-hidden="true">
+            <path d="M12.8 4.2l3 3L7.5 15.5l-3.6.6.6-3.6z" />
+          </svg>
+          <span>Edit</span>
+        </button>
+        <button id="tab-created" class="side-tab" type="button" role="tab"
+                aria-selected="false" aria-controls="panel-created" tabindex="-1">
+          <!-- Cartridges standing on a shelf. -->
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+               aria-hidden="true">
+            <rect x="3.5" y="4" width="3.4" height="11" rx="0.8" />
+            <rect x="8.3" y="4" width="3.4" height="11" rx="0.8" />
+            <path d="M13.4 5.2l3.2-.9 2.6 10.3-3.2.9z" />
+            <path d="M2 17.5h16" />
+          </svg>
+          <span>Created</span>
+          <span id="created-count" class="side-tab__count mono" hidden></span>
+        </button>
+        <button id="tab-memcard" class="side-tab" type="button" role="tab"
+                aria-selected="false" aria-controls="panel-memcard" tabindex="-1">
+          <!-- A memory card: notched top, contacts along it. -->
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+               aria-hidden="true">
+            <path d="M5 2.5h7.5L15 5v12.5H5z" />
+            <path d="M7.5 2.5v3M10 2.5v3M12.5 2.5v3" />
+            <path d="M7.5 12h5" />
+          </svg>
+          <span>Memory card</span>
+        </button>
+        <button id="tab-actions" class="side-tab" type="button" role="tab"
+                aria-selected="false" aria-controls="panel-actions" tabindex="-1">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" width="16" height="16"
+               aria-hidden="true">
+            <path d="M4 10h9M10 6l4 4-4 4" />
+          </svg>
+          <span>GamePak actions</span>
+        </button>
+      </nav>
+
+      <!-- ============================================================
+           Middle column: whichever phase the build is in
+           ============================================================ -->
+      <div id="work">
+        <div id="panel-create" role="tabpanel" aria-labelledby="tab-create">
+
+        <!-- What goes on it, where it goes, how it is written, what it looks
+             like. Each card states the current answer with the way to change
+             it; the preview on the right shows the result. -->
+        <section id="step-build" class="phase" aria-labelledby="step-build-h">
+          <h2 class="sr-only" id="step-build-h">Build a cartridge</h2>
+
+          <div class="build-group">
+            <p class="build-label">Games</p>
+            <div id="build-game" class="build-card">
+              <div id="build-game-plate" class="plate plate--empty">
+                <img id="build-game-cover" alt="" hidden />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+                     stroke-linecap="round" stroke-linejoin="round" width="18" height="18"
+                     aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 15l5-4 4 3 3-2 6 4" />
+                  <circle cx="9" cy="9" r="1.4" />
+                </svg>
+              </div>
+              <div class="build-card__body">
+                <p id="build-game-title" class="build-card__title">No game chosen</p>
+                <p id="build-game-meta" class="build-card__meta mono"></p>
+              </div>
+              <button id="btn-change-game" class="change-btn" type="button">Choose</button>
+            </div>
+
+            <!-- A single game names itself. Only a collection has to be told. -->
+            <div id="build-name" hidden>
+              <input id="collection-title" type="text" class="field__input--lead"
+                     placeholder="Collection name" autocomplete="off"
+                     aria-label="Collection name" />
+              <ol id="order-list" aria-label="Play order"></ol>
+            </div>
+          </div>
+
+          <div class="build-group">
+            <p class="build-label">Drive</p>
+            <div id="build-media" class="build-card">
+              <span id="build-media-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"
+                     stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+                  <rect x="3" y="7" width="14" height="9" rx="1.6" />
+                  <path d="M7 7V4.6h6V7" />
+                  <path d="M6.4 11.5h4" />
+                </svg>
+              </span>
+              <div class="build-card__body">
+                <p id="build-media-title" class="build-card__title">No drive chosen</p>
+                <p id="build-media-meta" class="build-card__meta mono"></p>
+              </div>
+              <button id="btn-change-media" class="change-btn" type="button">Choose</button>
+            </div>
+          </div>
+
+          <!-- Choices about this cartridge, not preferences. They start from
+               the defaults in Settings and are forgotten after the write. -->
+          <div class="build-group">
+            <p class="build-label">Options</p>
+            <div class="toggles">
+              <div class="toggle" id="opt-copy-row">
+                <label class="toggle__main">
+                  <input id="opt-copy" type="checkbox" role="switch" />
+                  <span class="toggle__label">Copy games to the drive</span>
+                </label>
+                <span id="opt-copy-meta" class="toggle__meta mono"></span>
+              </div>
+              <div class="toggle" id="opt-verify-row">
+                <label class="toggle__main">
+                  <input id="opt-verify" type="checkbox" role="switch" />
+                  <span class="toggle__label">Verify the copy</span>
+                </label>
+              </div>
+              <div class="toggle">
+                <label class="toggle__main">
+                  <input id="opt-eject" type="checkbox" role="switch" />
+                  <span class="toggle__label">Eject when done</span>
+                </label>
+              </div>
+              <div class="toggle">
+                <label class="toggle__main">
+                  <input id="opt-memcard" type="checkbox" role="switch" />
+                  <span class="toggle__label">Combo drive: a memory card too</span>
+                </label>
+              </div>
+              <!-- What the cartridge is for. A front-end that draws the
+                   physical cartridge picks its shell from it. -->
+              <div class="toggle">
+                <label class="toggle__main" for="opt-platform">
+                  <span class="toggle__label">Platform</span>
+                </label>
+                <select id="opt-platform" class="toggle__select"></select>
+              </div>
+              <div class="toggle toggle--danger" id="opt-format-row">
+                <label class="toggle__main">
+                  <input id="opt-format" type="checkbox" role="switch" />
+                  <span class="toggle__label">Erase the drive first</span>
+                </label>
+                <select id="opt-filesystem" class="toggle__select" aria-label="Filesystem" hidden></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="build-group">
+            <p class="build-label">Artwork</p>
+            <div id="art-slots" class="art-slots">
+              <button class="art-slot" type="button" data-slot="cover" id="cover-slot">
+                <span class="art-slot__art" id="collection-cover">
+                  <img id="collection-cover-img" alt="" hidden />
+                </span>
+                <span class="art-slot__name">Cover</span>
+              </button>
+              <button class="art-slot" type="button" data-slot="logo">
+                <span class="art-slot__art art-slot__art--check" id="slot-logo">
+                  <img id="slot-logo-img" alt="" hidden />
+                </span>
+                <span class="art-slot__name">Logo</span>
+              </button>
+              <button class="art-slot" type="button" data-slot="icon">
+                <span class="art-slot__art" id="slot-icon">
+                  <img id="slot-icon-img" alt="" hidden />
+                </span>
+                <span class="art-slot__name">Icon</span>
+              </button>
+              <button class="art-slot" type="button" data-slot="background">
+                <span class="art-slot__art" id="slot-hero">
+                  <img id="slot-hero-img" alt="" hidden />
+                </span>
+                <span class="art-slot__name">Hero</span>
+              </button>
+            </div>
+            <button id="btn-inherit-cover" class="link" type="button" hidden></button>
+          </div>
+        </section>
+
+        <!-- Step 1b — a game nothing scanned (6b) -------------------- -->
+        <section id="step-custom" class="phase" hidden aria-labelledby="step-custom-h">
+          <div class="step">
+            <span class="step__n">1</span>
+            <h2 class="step__h" id="step-custom-h">Add a game by hand</h2>
+            <span class="step__rule"></span>
+          </div>
+
+          <div id="custom-body">
+            <div id="custom-art">
+              <div id="custom-cover" class="plate plate--empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.1"
+                     stroke-linecap="round" stroke-linejoin="round" width="34" height="34"
+                     aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2" />
+                  <path d="M3 15l5-4 4 3 3-2 6 4" />
+                  <circle cx="9" cy="9" r="1.4" />
+                </svg>
+                <p>No cover art</p>
+              </div>
+              <button id="btn-custom-cover" class="btn btn--quiet" type="button">
+                Choose artwork…
+              </button>
+            </div>
+
+            <div id="custom-fields">
+              <label class="field">
+                <span class="field__label">Folder</span>
+                <div class="folder-pick">
+                  <button id="btn-pick-folder" class="btn btn--quiet" type="button">
+                    Choose folder…
+                  </button>
+                  <button id="btn-clear-folder" class="link" type="button" hidden>Clear</button>
+                </div>
+              </label>
+              <p id="folder-chosen" class="hint mono selectable" hidden></p>
+
+              <label class="field">
+                <span class="field__label">Or a ROM</span>
+                <div class="folder-pick">
+                  <button id="btn-pick-rom" class="btn btn--quiet" type="button">
+                    Choose ROM…
+                  </button>
+                  <button id="btn-clear-rom" class="link" type="button" hidden>Clear</button>
+                </div>
+              </label>
+              <p id="rom-chosen" class="hint mono selectable" hidden></p>
+
+              <label class="field">
+                <span class="field__label">Title</span>
+                <input id="custom-title" type="text" placeholder="My Game" autocomplete="off" />
+              </label>
+              <p id="title-hint" class="hint" hidden></p>
+
+              <div class="field">
+                <span class="field__label">Starts</span>
+                <ul id="exe-choices" aria-label="Executables found in this folder"></ul>
+                <p id="exe-hint" class="hint"></p>
+              </div>
+
+              <label class="field">
+                <span class="field__label">Or type a link</span>
+                <input id="custom-exec" type="text" placeholder="steam://rungameid/367520"
+                       autocomplete="off" spellcheck="false" />
+              </label>
+
+              <div class="custom-actions">
+                <button id="btn-custom-done" class="btn btn--primary" type="button">
+                  <span class="btn__label">Done</span>
+                </button>
+                <button id="btn-custom-back" class="link" type="button">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Writing — the same window, running (7b) ------------------ -->
+        <section id="step-running" class="phase" hidden aria-labelledby="running-title">
+          <p id="running-phase" class="group"></p>
+          <h2 id="running-title">Starting…</h2>
+
+          <div id="running-figures">
+            <div>
+              <p class="figure__label">Written</p>
+              <p class="figure__value mono">
+                <span id="written-done">—</span><span id="written-total" class="figure__unit"></span>
+              </p>
+            </div>
+            <div>
+              <p class="figure__label">Remaining</p>
+              <p id="remaining" class="figure__value mono">—</p>
+            </div>
+          </div>
+
+          <div id="progress-track" role="progressbar" aria-label="Writing the cartridge"
+               aria-valuemin="0" aria-valuemax="100">
+            <div id="progress-fill"></div>
+          </div>
+
+          <p id="running-rate">
+            <span id="rate" class="mono"></span>
+            <span id="current-file" class="mono selectable"></span>
+          </p>
+
+          <div id="log-wrap">
+            <p class="group">Log</p>
+            <ul id="log" aria-live="polite"></ul>
+          </div>
+        </section>
+        </div>
+
+        <!-- ============================================================
+             Edit — a cartridge that already exists
+             ============================================================
+             Reachable without picking a game first, which is what made this a
+             dead end before: editing lived behind a link under the drive list,
+             and the drive list only appeared once something was ticked.
+
+             Not a dialog. Editing is a job you sit in, comparing what you
+             changed against the preview beside it, and a modal that covers the
+             preview is the wrong shape for that. -->
+        <!-- Edit is Create with the questions already answered: same cards, same
+             groups, in the same order. The only difference is that the media is
+             a cartridge that exists and the button says Update. -->
+        <div id="panel-edit" role="tabpanel" aria-labelledby="tab-edit" hidden>
+          <div class="build-group">
+            <p class="build-label">Cartridge</p>
+            <div id="edit-media" class="build-card">
+              <span id="edit-media-icon" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"
+                     stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+                  <rect x="3" y="7" width="14" height="9" rx="1.6" />
+                  <path d="M7 7V4.6h6V7" />
+                  <path d="M6.4 11.5h4" />
+                </svg>
+              </span>
+              <div class="build-card__body">
+                <p id="edit-media-title" class="build-card__title">Choose a cartridge</p>
+                <p id="edit-media-meta" class="build-card__meta mono"></p>
+              </div>
+              <button id="btn-change-cart" class="change-btn" type="button">Change</button>
+            </div>
+          </div>
+
+          <div id="edit-form-wrap" hidden>
+            <div class="build-group">
+              <p class="build-label">Name</p>
+              <input id="edit-title" type="text" class="field__input--lead"
+                     autocomplete="off" aria-label="Cartridge name" />
+            </div>
+
+            <div class="build-group">
+              <p class="build-label">Options</p>
+              <div class="toggles">
+                <div class="toggle">
+                  <label class="toggle__main">
+                    <input id="edit-memcard" type="checkbox" role="switch" />
+                    <span class="toggle__label">Combo drive: a memory card too</span>
+                  </label>
+                </div>
+                <div class="toggle">
+                  <label class="toggle__main" for="edit-platform">
+                    <span class="toggle__label">Platform</span>
+                  </label>
+                  <select id="edit-platform" class="toggle__select"></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- The same three slots Create has, for the same three files. A
+                 cartridge's artwork does not change meaning because it already
+                 exists. -->
+            <div class="build-group">
+              <p class="build-label">Artwork</p>
+              <div id="edit-art-slots" class="art-slots">
+                <button class="art-slot" type="button" data-slot="cover" id="edit-cover-slot">
+                  <span class="art-slot__art" id="edit-cover">
+                    <img id="edit-cover-img" alt="" hidden />
+                  </span>
+                  <span class="art-slot__name">Cover</span>
+                </button>
+                <button class="art-slot" type="button" data-slot="logo">
+                  <span class="art-slot__art art-slot__art--check" id="edit-logo">
+                    <img id="edit-logo-img" alt="" hidden />
+                  </span>
+                  <span class="art-slot__name">Logo</span>
+                </button>
+                <button class="art-slot" type="button" data-slot="icon">
+                  <span class="art-slot__art" id="edit-icon">
+                    <img id="edit-icon-img" alt="" hidden />
+                  </span>
+                  <span class="art-slot__name">Icon</span>
+                </button>
+                <button class="art-slot" type="button" data-slot="background">
+                  <span class="art-slot__art art-slot__art--wide" id="edit-hero">
+                    <img id="edit-hero-img" alt="" hidden />
+                  </span>
+                  <span class="art-slot__name">Hero</span>
+                </button>
+              </div>
+              <button id="btn-remove-logo" class="link" type="button" hidden>
+                Remove logo
+              </button>
+              <button id="btn-refetch-art" class="link" type="button"
+                      title="Fetch a fresh poster for every game on this cartridge">
+                Refetch posters from SteamGridDB
+              </button>
+            </div>
+
+            <div class="build-group" id="edit-games-group">
+              <p class="build-label">Games</p>
+              <ul id="edit-games" aria-label="Games on this cartridge"></ul>
+            </div>
+
+            <p id="edit-status" class="hint" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Memory card — a drive that carries saves, and no games
+             ============================================================ -->
+        <div id="panel-memcard" role="tabpanel" aria-labelledby="tab-memcard" hidden>
+          <div class="build-group">
+            <p class="build-label">Drive</p>
+            <select id="mcw-drive" class="mcw-select" aria-label="Drive"></select>
+            <p id="mcw-drive-note" class="hint"></p>
+          </div>
+
+          <div class="build-group">
+            <p class="build-label">Name</p>
+            <input id="mcw-name" type="text" class="field__input--lead"
+                   autocomplete="off" placeholder="Memory card" aria-label="Memory card name" />
+          </div>
+
+          <div class="build-group">
+            <p class="build-label">Saves on it</p>
+            <ul id="mcw-games" aria-label="Games whose saves it carries"></ul>
+            <p id="mcw-games-empty" class="hint">Add the games whose saves should travel with you.</p>
+            <input id="mcw-search" type="search" class="mcw-search" autocomplete="off"
+                   spellcheck="false" placeholder="Add a game…" aria-label="Add a game" />
+            <ul id="mcw-results" aria-label="Matching games"></ul>
+          </div>
+
+          <div class="mcw-foot">
+            <p id="mcw-status" class="hint" role="status" aria-live="polite"></p>
+            <button id="btn-mcw-write" class="btn btn--primary" type="button">
+              <span class="btn__label">Write memory card</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- GamePak actions — a card or barcode, and what it starts. The list
+             is the home; New GamePak listens for a tap or scan the moment it
+             opens, so making one is: tap, pick, save. -->
+        <div id="panel-actions" role="tabpanel" aria-labelledby="tab-actions" hidden>
+          <div id="gp-home" class="gp-view">
+            <div class="gp-head">
+              <p class="build-label">Your GamePaks</p>
+              <button id="gp-new" class="btn btn--primary" type="button">
+                <span class="btn__label">New GamePak</span>
+              </button>
+            </div>
+            <ul id="gp-list" aria-label="GamePaks on this PC"></ul>
+            <div id="gp-empty" class="gp-empty" hidden>
+              <p class="gp-empty__title">No GamePaks yet</p>
+              <p class="hint">A GamePak is a card or a barcode that starts something: a game, a
+                stream, a movie. Make one, then tap the card to play.</p>
+            </div>
+            <p id="gp-status" class="hint" role="status" aria-live="polite"></p>
+          </div>
+
+          <div id="gp-form" class="gp-view" hidden>
+            <section class="gp-step">
+              <p class="build-label">1 · Tap a card or scan a barcode</p>
+              <div id="gp-listen" class="gp-listen" data-state="waiting">
+                <span class="gp-listen__mark" aria-hidden="true"></span>
+                <p id="gp-listen-text" class="gp-listen__text" role="status" aria-live="polite">
+                  Waiting for a card or barcode…</p>
+                <button id="gp-type-id" class="change-btn" type="button">Type an ID</button>
+              </div>
+              <label id="gp-id-field" class="field" hidden>
+                <span class="field__label">ID</span>
+                <input id="gp-id" type="text" autocomplete="off" spellcheck="false"
+                       placeholder="gp_… or the number under a barcode — blank makes one up" />
+              </label>
+            </section>
+
+            <section class="gp-step">
+              <p class="build-label">2 · What should it start?</p>
+              <div id="gp-kinds" class="gp-kinds" role="radiogroup" aria-label="What it starts">
+                <button type="button" role="radio" class="gp-kind" data-kind="game">Game on this PC</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="moonlight">Stream (Moonlight)</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="remote">Game on another PC</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="local">Movie or file</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="exec">Program</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="open">Web page</button>
+                <button type="button" role="radio" class="gp-kind" data-kind="service">Service</button>
+              </div>
+              <div id="gp-game" class="gp-game" hidden>
+                <input id="gp-game-search" type="search" class="mcw-search" autocomplete="off"
+                       spellcheck="false" placeholder="Find an installed game…"
+                       aria-label="Find an installed game" />
+                <ul id="gp-game-results" aria-label="Installed games"></ul>
+              </div>
+              <div id="gp-fields" class="gp-fields" hidden>
+                <label class="field">
+                  <span id="gp-a-label" class="field__label"></span>
+                  <input id="gp-a" type="text" autocomplete="off" spellcheck="false" list="gp-a-list" />
+                  <datalist id="gp-a-list"></datalist>
+                </label>
+                <label id="gp-b-field" class="field">
+                  <span id="gp-b-label" class="field__label"></span>
+                  <input id="gp-b" type="text" autocomplete="off" spellcheck="false" />
+                </label>
+                <div id="gp-ml" class="gp-ml" hidden>
+                  <button id="gp-ml-find" class="change-btn" type="button">Find games on this host</button>
+                  <input id="gp-ml-search" type="search" class="mcw-search" autocomplete="off"
+                         spellcheck="false" placeholder="Filter the host's games…"
+                         aria-label="Filter the host's games" hidden />
+                  <ul id="gp-ml-results" aria-label="Games on the Moonlight host"></ul>
+                </div>
+              </div>
+            </section>
+
+            <section class="gp-step">
+              <p class="build-label">3 · Name it</p>
+              <input id="gp-title" type="text" class="field__input--lead" autocomplete="off"
+                     spellcheck="false" placeholder="Stardew Valley" aria-label="Name" />
+            </section>
+
+            <div class="mcw-foot">
+              <p id="gp-form-status" class="hint" role="status" aria-live="polite"></p>
+              <button id="gp-cancel" class="btn btn--quiet" type="button">Cancel</button>
+              <button id="gp-save" class="btn btn--primary" type="button" disabled>
+                <span class="btn__label">Save GamePak</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Created — every cartridge written here, plugged in or not
+             ============================================================ -->
+        <div id="panel-created" role="tabpanel" aria-labelledby="tab-created" hidden>
+          <p class="build-label">Written on this PC</p>
+          <ul id="created-list" aria-label="Cartridges written on this PC"></ul>
+          <p id="created-empty" class="hint" hidden>
+            Nothing yet. Every cartridge you write from now on is kept here,
+            plugged in or not.
+          </p>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Right rail: what is being built
+           ============================================================ -->
+      <aside id="rail" aria-label="The cartridge">
+        <!-- Nothing ticked yet -->
+        <div id="rail-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round" width="30" height="30"
+               aria-hidden="true">
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <path d="M8 7h8M8 21v-4h8v4" />
+          </svg>
+          <p>Choose a game and a drive</p>
+        </div>
+
+        <!-- What it is -->
+        <div id="rail-body" hidden>
+          <p id="rail-kind" class="mono">
+            <span id="rail-kind-text">Cartridge</span>
+            <span id="rail-kind-count" class="pill" hidden></span>
+          </p>
+
+          <!--
+            The launcher, at the size it will be, built from the same parts the
+            real one has. Not a thumbnail of the cover: the point is that the
+            artwork is only half of what the cartridge looks like — the logo
+            prints over it, the title falls back when there is no logo, and Play
+            has to stay readable on whatever colour the art turns out to be.
+            Seeing that here is what stops a cover being chosen that the title
+            disappears into.
+          -->
+          <div id="rail-launcher">
+            <p class="field__label">The launcher</p>
+            <div id="rail-launcher-frame" aria-hidden="true">
+              <div id="rail-launcher-card">
+                <img id="rail-launcher-art" alt="" hidden />
+                <div id="rail-launcher-empty" aria-hidden="true"><span>No&nbsp;cover&nbsp;art</span></div>
+                <div id="rail-launcher-scrim" aria-hidden="true"></div>
+                <div id="rail-launcher-stage">
+                  <p id="rail-launcher-eyebrow" class="mono" hidden></p>
+                  <img id="rail-launcher-logo" alt="" hidden />
+                  <p id="rail-launcher-title">Nothing yet</p>
+                  <div id="rail-launcher-actions" aria-hidden="true">
+                    <span id="rail-launcher-play">Play</span>
+                    <span id="rail-launcher-eject">
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                           stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                        <path d="M8 2.8L13.8 9H2.2z" />
+                        <path d="M2.8 12.5h10.4" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- The other place a cartridge shows up, and the only thing the icon
+               slot is for. -->
+          <div id="rail-explorer" hidden>
+            <p id="rail-explorer-label" class="field__label">In Explorer</p>
+            <div id="rail-explorer-row">
+              <span id="rail-explorer-icon" aria-hidden="true"></span>
+              <span id="rail-explorer-name"></span>
+              <span id="rail-explorer-free" class="mono"></span>
+            </div>
+          </div>
+
+          <!-- What it costs on the drive -->
+          <div id="rail-space" hidden>
+            <div class="rail-space__head">
+              <span id="rail-drive-label" class="mono"></span>
+              <span id="rail-drive-fill" class="mono"></span>
+            </div>
+            <div id="rail-bar"></div>
+          </div>
+
+          <!-- Per write, never a saved default: this one deletes games from the
+               PC, so it is asked for each time and starts unticked. -->
+          <label id="move-row" class="opt opt--grave" hidden>
+            <input id="opt-move" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Move instead of copy</span>
+              <span id="move-hint" class="opt__hint"></span>
+            </span>
+          </label>
+
+          <!-- The plan: what is ticked, in the order it will happen -->
+          <div id="rail-plan" hidden>
+            <p class="field__label">What will happen</p>
+            <ol id="plan"></ol>
+          </div>
+
+          <!-- While running: the options that are in force -->
+          <div id="rail-forced" hidden>
+            <p class="field__label">Options in force</p>
+            <ul id="forced"></ul>
+          </div>
+        </div>
+
+        <footer id="rail-foot">
+          <p id="ready-message" role="status" aria-live="polite">Nothing to write yet</p>
+          <div id="rail-buttons">
+            <button id="btn-create" class="btn btn--primary" type="button" disabled>
+              <span class="btn__label">Write cartridge</span>
+              <kbd class="btn__key" aria-hidden="true">&crarr;</kbd>
+            </button>
+          </div>
+          <p id="status" class="selectable" role="status" aria-live="polite"></p>
+        </footer>
+      </aside>
+    </div>
+  </main>
+
+  <!--
+    Change game / Change media.
+
+    The rail states what is chosen; these are how it gets changed. Both are the
+    same shape on purpose — a searchable list of everything available, the
+    current choice marked — because "which game" and "which drive" are the same
+    question asked about two different kinds of thing.
+  -->
+  <dialog id="pick-dialog">
+    <form id="pick-form" method="dialog">
+      <header class="dialog-head">
+        <h3 id="pick-title">Choose a game</h3>
+        <button id="pick-close" class="icon-btn icon-btn--close" type="submit" value="cancel"
+                aria-label="Close">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="15" height="15" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="dialog-body">
+        <!-- The library itself, not a second copy of it. Ticking here is the
+             same tick it always was, so multi-select, search and the drag order
+             all behave as they did when this list was a step. -->
+        <div id="pick-games">
+          <div class="search">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+                 stroke-linecap="round" width="14" height="14" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.4" />
+              <path d="M10.4 10.4L14 14" />
+            </svg>
+            <input id="search" type="search" placeholder="Search your library"
+                   autocomplete="off" spellcheck="false" aria-label="Search games" />
+            <span id="tick-count" class="mono">none ticked</span>
+          </div>
+          <div id="games-wrap">
+            <ul id="games" aria-label="Installed games"></ul>
+            <p id="games-empty" hidden></p>
+            <p id="games-foot">
+              <button id="btn-custom" class="link" type="button">Add a game by hand</button>
+            </p>
+          </div>
+        </div>
+
+        <div id="pick-media" hidden>
+          <ul id="drives" aria-label="Target drives"></ul>
+          <p id="drives-empty" class="hint" hidden></p>
+          <button id="btn-register" class="link" type="button" hidden
+                  title="Steam must be closed: it rewrites its library list from memory when it exits">
+            Fix this cartridge in Steam
+          </button>
+          <button id="btn-unregister" class="link" type="button" hidden>
+            Remove from Steam's library
+          </button>
+        </div>
+      </div>
+
+      <footer class="dialog-actions">
+        <button id="pick-done" class="btn btn--primary" type="submit" value="done">
+          <span class="btn__label">Done</span>
+        </button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form id="settings-form" method="dialog">
+      <header class="dialog-head">
+        <h3>Settings</h3>
+        <button id="settings-close" class="icon-btn icon-btn--close" type="submit" value="cancel"
+                aria-label="Close">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="15" height="15" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+        </button>
+      </header>
+
+      <div class="dialog-body">
+        <p class="group">Library</p>
+        <div class="group__body">
+          <div class="rescan">
+            <p id="sources" class="hint"></p>
+            <button id="btn-rescan" class="link" type="button">Rescan</button>
+          </div>
+          <p id="scan-age" class="hint"></p>
+        </div>
+
+        <p class="group">Online lookups</p>
+        <div class="group__body">
+          <label class="opt">
+            <input id="set-sgdb" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Search SteamGridDB for artwork</span>
+            </span>
+          </label>
+          <div id="sgdb-key-field" hidden>
+            <label class="field">
+              <span class="field__label">API key</span>
+              <input id="set-sgdb-key" type="password" autocomplete="off" spellcheck="false"
+                     placeholder="From steamgriddb.com → Preferences → API" />
+            </label>
+          </div>
+          <label class="opt">
+            <input id="set-ludusavi" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Look up where games keep their saves</span>
+              <span class="opt__hint">From Ludusavi's list, downloaded once (17 MB) and refreshed monthly.</span>
+            </span>
+          </label>
+          <label class="opt">
+            <input id="set-hltb" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Look up how long games take to beat</span>
+              <span class="opt__hint">From HowLongToBeat, once, when a cartridge is written.</span>
+            </span>
+          </label>
+        </div>
+
+        <p class="group">When a cartridge is plugged in</p>
+        <div class="group__body">
+          <label class="field">
+            <span class="field__label">Do this</span>
+            <select id="set-on-insert">
+              <option value="focus_ui">Open the launcher</option>
+              <option value="auto_launch_game">Start the game</option>
+              <option value="notify_only">Show a notification</option>
+              <option value="none">Nothing</option>
+            </select>
+            <span id="on-insert-hint" class="opt__hint"></span>
+          </label>
+          <label class="opt">
+            <input id="set-launch-on-trigger" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Launch directly on trigger</span>
+              <span class="opt__hint">A tapped card or scanned barcode starts its game at once. Off: the launcher opens at READY and Play starts it.</span>
+            </span>
+          </label>
+          <div>
+            <span class="field__label">Open it in</span>
+            <div id="frontends" class="frontends"></div>
+            <p id="frontends-warning" class="opt__hint" role="status" hidden></p>
+          </div>
+        </div>
+
+        <p class="group">On the cartridge</p>
+        <div class="group__body">
+          <label class="opt">
+            <input id="set-playtime" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Track playtime</span>
+              <span class="opt__hint">Counts while the game is running, kept in cartridge.conf.</span>
+            </span>
+          </label>
+          <label class="field" id="set-idle-row">
+            <span class="field__label">Pause when nobody is playing for</span>
+            <select id="set-idle">
+              <option value="5">5 minutes</option>
+              <option value="10">10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="30">30 minutes</option>
+              <option value="0">Never pause</option>
+            </select>
+          </label>
+          <label class="opt">
+            <input id="set-save-sync" type="checkbox" />
+            <span class="opt__body">
+              <span class="opt__label">Sync saves</span>
+              <span class="opt__hint">Conflicts are never overwritten.</span>
+            </span>
+          </label>
+        </div>
+
+        <p class="group">New cartridges</p>
+        <div class="group__body">
+          <label class="field">
+            <span class="field__label">Filesystem when erasing</span>
+            <select id="set-filesystem"></select>
+            <span class="opt__hint" id="set-filesystem-note"></span>
+          </label>
+          <label class="opt">
+            <input id="set-copy" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Copy games to the drive</span></span>
+          </label>
+          <label class="opt">
+            <input id="set-verify" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Verify the copy</span></span>
+          </label>
+          <label class="opt">
+            <input id="set-eject" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Eject when done</span></span>
+          </label>
+          <label class="opt">
+            <input id="set-icon" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Name the drive and give it an icon</span></span>
+          </label>
+          <label class="opt">
+            <input id="set-close-steam" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Close Steam when it needs to be</span></span>
+          </label>
+          <label class="opt" id="set-trim-row">
+            <input id="set-trim" type="checkbox" />
+            <span class="opt__body"><span class="opt__label">Trim free space after writing</span></span>
+          </label>
+          <label class="field">
+            <span class="field__label">Copy speed limit</span>
+            <select id="set-copy-rate">
+              <option value="0">No limit</option>
+              <option value="200">200 MB/s</option>
+              <option value="120">120 MB/s</option>
+              <option value="80">80 MB/s</option>
+              <option value="40">40 MB/s</option>
+            </select>
+            <span class="opt__hint">Lower it if the drive overheats and disconnects.</span>
+          </label>
+        </div>
+
+        <!-- Defender and Search both exist on one platform only. -->
+        <div id="set-tune-row" hidden>
+          <p class="group">Windows</p>
+          <div class="group__body">
+            <label class="opt">
+              <input id="set-tune" type="checkbox" />
+              <span class="opt__body">
+                <span class="opt__label">Skip Defender scans and Search indexing on cartridges</span>
+              </span>
+            </label>
+            <div id="tune-now" class="tune-now" hidden>
+              <ul id="tune-plan" class="tune-plan" aria-label="Commands that will run" hidden></ul>
+              <div class="tune-actions">
+                <button id="btn-tune" class="link" type="button">Apply to the chosen drive</button>
+                <button id="btn-untune" class="link" type="button">Undo</button>
+                <button id="btn-tune-run" class="link" type="button" hidden>Run these commands</button>
+                <button id="btn-tune-cancel" class="link" type="button" hidden>Cancel</button>
+              </div>
+              <p id="tune-status" class="opt__hint" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="dialog-actions">
+        <button id="settings-save" class="btn btn--primary" type="button">
+          <span class="btn__label">Save</span>
+        </button>
+      </footer>
+      <p id="settings-status" class="hint" role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <!-- The one question the wizard asks at the last moment, because the answer
+       cannot be taken back. -->
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <form id="confirm-form" method="dialog">
+      <header class="dialog-head">
+        <h3 id="confirm-title">Erase the drive?</h3>
+      </header>
+      <div class="dialog-body">
+        <p id="confirm-text" class="confirm-text"></p>
+      </div>
+      <footer class="dialog-actions">
+        <button id="confirm-cancel" class="btn btn--quiet" type="submit" value="cancel">
+          <span class="btn__label">Cancel</span>
+        </button>
+        <button id="confirm-go" class="btn btn--primary btn--danger" type="submit" value="go">
+          <span class="btn__label">Erase and write</span>
+        </button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="sgdb-dialog">
+    <form id="sgdb-form" method="dialog">
+      <header class="dialog-head">
+        <h3 id="sgdb-title">Artwork</h3>
+        <button id="sgdb-close" class="icon-btn icon-btn--close" type="submit" value="cancel"
+                aria-label="Close">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" width="15" height="15" aria-hidden="true">
+            <path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2" />
+          </svg>
+        </button>
+      </header>
+
+      <!-- Three kinds of asset, one tab each, with the launcher preview beside
+           them so a choice is seen where it will land. -->
+      <div id="sgdb-tabs" role="tablist" aria-label="Artwork type">
+        <button class="tab" type="button" role="tab" data-type="grid" aria-selected="true">Cover</button>
+        <button class="tab" type="button" role="tab" data-type="hero" aria-selected="false">Hero</button>
+        <button class="tab" type="button" role="tab" data-type="logo" aria-selected="false">Logo</button>
+        <button class="tab" type="button" role="tab" data-type="icon" aria-selected="false">Icon</button>
+      </div>
+
+      <div id="sgdb-body">
+        <div id="sgdb-picker">
+          <label class="field">
+            <span class="field__label">Search title</span>
+            <input id="sgdb-search" type="search" placeholder="Game title" autocomplete="off" />
+          </label>
+          <p id="sgdb-status" class="hint"></p>
+          <div id="sgdb-results" aria-live="polite"></div>
+
+          <!-- The icon tab is the only one that writes a file, so it is the
+               only one that reports back. -->
+          <p id="ico-receipt" class="hint" hidden></p>
+
+          <label class="field">
+            <span class="field__label">Or a file</span>
+            <button id="sgdb-use-local" class="btn btn--quiet" type="button">Choose file…</button>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Or a URL</span>
+            <div class="folder-pick">
+              <input id="sgdb-manual-url" type="url" placeholder="https://..."
+                     autocomplete="off" spellcheck="false" />
+              <button id="sgdb-use-manual" class="btn btn--quiet" type="button">Use</button>
+            </div>
+          </label>
+        </div>
+
+        <!-- Where it lands: all four at once, each in its own shape, with the
+             one being chosen marked. Clicking one switches to its tab. -->
+        <div id="sgdb-preview">
+          <div class="pv" data-type="hero">
+            <p class="field__label">Hero</p>
+            <div id="preview-hero" class="pv__frame">
+              <img id="preview-hero-img" alt="" hidden />
+              <span class="pv__empty">No hero</span>
+            </div>
+          </div>
+
+          <div class="pv-row">
+          <div class="pv" data-type="grid logo">
+            <p class="field__label">Cover and logo</p>
+            <div id="preview-art" class="pv__frame">
+              <img id="preview-grid" alt="" hidden />
+              <div id="preview-empty" aria-hidden="true"><span>NO&nbsp;COVER</span></div>
+              <div id="preview-stage" aria-hidden="true">
+                <img id="preview-logo" alt="" hidden />
+                <p id="preview-title">Nothing yet</p>
+                <div id="preview-actions" aria-hidden="true">
+                  <span>Play</span>
+                  <span>⏏</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pv" data-type="icon">
+            <p class="field__label">Icon</p>
+            <div id="preview-icon-row" class="pv__frame">
+              <div id="preview-icon" class="plate plate--empty" aria-hidden="true"></div>
+              <p id="preview-icon-label" class="hint">In Explorer</p>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="dialog-actions">
+        <button id="sgdb-done" class="btn btn--primary" type="submit" value="done">
+          <span class="btn__label">Done</span>
+        </button>
+      </footer>
+    </form>
+  </dialog>
+
+  <script type="module" src="src/create.js"></script>
+</body>
+</html>

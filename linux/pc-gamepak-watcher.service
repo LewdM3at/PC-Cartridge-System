@@ -1,0 +1,60 @@
+# The rootless install: a systemd *user* service, started at login.
+#
+# The system install does not use this. There, udev starts the launcher through
+# pc-gamepak@.service and nothing is resident. This is for installs that cannot
+# write a udev rule — a Flatpak, or anyone who would rather not give a game
+# launcher root — and it costs one small process instead.
+#
+#   systemctl --user enable --now pc-gamepak-watcher.service
+
+[Unit]
+Description=PC GamePak cartridge watcher
+Documentation=https://github.com/HarryBMa/pc-gamepak
+# Wait for the desktop: the launcher needs a session to put a window on.
+After=graphical-session.target
+PartOf=graphical-session.target
+# A cartridge nothing mounted is a cartridge this never hears about, and not
+# every desktop automounts. Wants= rather than Requires=: if udiskie is absent,
+# or the desktop is already doing the job, the watcher still starts.
+Wants=pc-gamepak-automount.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/pc-gamepak-watcher
+# It blocks in poll() and does nothing else, so a crash loop would be a bug
+# worth noticing rather than papering over — but a failed restart should not
+# leave the user with no watcher until the next login.
+Restart=on-failure
+RestartSec=5
+
+# Deliberately unhardened, which took a measurement to arrive at.
+#
+# This unit used to carry NoNewPrivileges, RestrictNamespaces,
+# ProtectKernelTunables, ProtectControlGroups and MemoryMax=64M. None of it
+# protected anything worth protecting — the watcher is a 2 MB process that
+# reads /proc and spawns one program — and all of it landed on the launcher
+# instead, because a child inherits both the cgroup and the process flags:
+#
+#   MemoryMax=64M      the launcher needs ~110 MB, so it sat pinned at the cap
+#                      with 235 MB pushed to swap. With no swap, an OOM kill.
+#   NoNewPrivileges    pkexec cannot raise privileges under it, so Format and
+#                      Trim fail in any window opened this way.
+#   RestrictNamespaces WebKit builds its web-process sandbox out of user
+#                      namespaces; forbidding them takes that sandbox away.
+#
+# So the limits made the launcher worse and the watcher no safer. If the
+# hardening is ever wanted back, the launcher has to stop being a child first:
+# spawn it as a transient unit (`systemd-run --user --collect`), which the user
+# manager forks, so it inherits neither the cgroup nor NoNewPrivs. Until then,
+# nothing here — not even RestrictRealtime, which looks harmless and is not:
+# it is enforced with seccomp, seccomp requires the NO_NEW_PRIVS bit to be set
+# on the process, and that bit is inherited and cannot be cleared. The unit
+# reports NoNewPrivileges=no while every child still runs with NoNewPrivs: 1,
+# and pkexec stays broken. One seccomp option anywhere here costs Format and
+# Trim.
+
+[Install]
+# default.target rather than graphical-session.target: the latter is only
+# reached on desktops with systemd session integration, and a bare window
+# manager would leave the watcher permanently disabled with no clue why.
+WantedBy=default.target

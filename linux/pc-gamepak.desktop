@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=PC GamePak
+GenericName=Cartridge Wizard
+Comment=Write a game cartridge to a removable drive
+# --create, not a bare launch: the popup belongs to a cartridge being plugged
+# in, and starting it from a menu with no drive only ever says "NO CARTRIDGE".
+# The wizard is the half of this program a person opens on purpose.
+Exec=pc-gamepak --create
+Icon=pc-gamepak
+Terminal=false
+StartupNotify=true
+StartupWMClass=pc-gamepak
+Categories=Game;
+Keywords=cartridge;gamepak;steam;usb;

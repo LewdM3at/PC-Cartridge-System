@@ -1,0 +1,37 @@
+# Automount, for desktops that do not do it themselves.
+#
+# Nothing in PC GamePak can mount a drive. The watcher waits on the mount table
+# and the udev helper waits for a mount point; both are useless for a cartridge
+# the desktop never mounted. GNOME mounts removable media on its own, KDE asks
+# first unless told otherwise, and a bare window manager does nothing at all —
+# so "plug it in and it opens" is not true everywhere without help.
+#
+# This is that help: udiskie, which talks to the same udisks2 the desktop uses,
+# mounts to the same /run/media/$USER/LABEL, and needs no root. The watcher
+# unit Wants= this one, so enabling the watcher is enough to get both. If
+# udiskie is not installed the Want fails quietly and the watcher still runs —
+# which is the right outcome on a desktop that was already automounting.
+#
+# Not needed if your desktop already mounts cartridges on insert. Harmless if
+# it does: udisks serialises, and the second mount request is a no-op.
+
+[Unit]
+Description=PC GamePak automount helper (udiskie)
+Documentation=man:udiskie(8)
+After=graphical-session.target
+PartOf=graphical-session.target
+ConditionPathExists=/usr/bin/udiskie
+
+[Service]
+Type=simple
+# No tray icon, no notifications, no file manager window on insert: the
+# launcher is the thing that should appear when a cartridge arrives.
+ExecStart=/usr/bin/udiskie --automount --no-tray --no-notify --no-file-manager
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=default.target

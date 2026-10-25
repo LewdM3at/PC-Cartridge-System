@@ -1,0 +1,304 @@
+/* ==========================================================================
+   Big Picture — a hero behind, covers along the bottom, the logo in front.
+
+   The skin the three art slots exist for. Every other skin asks for one kind
+   of picture and gets it everywhere; this one wants a different picture in
+   each of the three places a picture can go:
+
+     --skin-art: hero        the selected game's hero fills the window
+     --skin-row-art: grid    the rail is that game's cover, and its neighbours'
+     --skin-logo: game       its logo is printed over the hero, not its name
+
+   Built for a couch: the largest window of the set, the biggest type, and a
+   rail that runs sideways so the pad's left and right are the keys that move.
+   ========================================================================== */
+
+:root {
+  --skin-width: 860;
+  --skin-height: 500;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: game;
+
+  --accent-ink: #06121d;
+  --radius: 10px;
+
+  --bp-ink: #ffffff;
+  --bp-dim: rgb(255 255 255 / 0.62);
+  --bp-panel: rgb(8 12 20 / 0.72);
+  --bp-font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#card {
+  background-color: #06090f;
+  color: var(--bp-ink);
+  font-family: var(--bp-font);
+  border-radius: 10px;
+}
+
+#face {
+  border-radius: 10px;
+}
+
+/* The hero is the room, so it is not dimmed the way a background would be —
+   only the bands the type sits in are darkened, below. */
+#plate img {
+  object-position: center 28%;
+}
+
+/* A wide window turns the stock top scrim into a stripe across the sky. The
+   bottom one does all the work here, under the logo and the rail. */
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: auto 0 0 0;
+  height: 74%;
+  background: linear-gradient(
+    180deg,
+    rgb(6 9 15 / 0) 0%,
+    rgb(6 9 15 / 0.55) 42%,
+    rgb(6 9 15 / 0.94) 78%,
+    #06090f 100%
+  );
+}
+
+/* The collection's mark stays in its corner: on a couch it is the one thing
+   that says which cartridge is in, and the logo in front is the game's. */
+#cart-mark {
+  max-height: 34px;
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------- the chrome */
+
+#chrome {
+  height: 52px;
+  padding: 0 14px 0 0;
+  align-items: center;
+}
+
+#chrome .icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgb(8 12 20 / 0.55);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  color: var(--bp-ink);
+  backdrop-filter: blur(8px);
+}
+
+#chrome .icon-btn:hover {
+  background: rgb(8 12 20 / 0.8);
+  border-color: rgb(255 255 255 / 0.4);
+}
+
+#chrome .icon-btn--close:hover {
+  background: #c0392b;
+  border-color: #ff8f80;
+  color: #ffffff;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 0;
+  margin-top: 0;
+  padding: 52px 40px 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+#eyebrow {
+  order: -1;
+  flex: none;
+  margin: 0 0 10px;
+  font-family: var(--bp-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--bp-dim);
+}
+
+/* Printed large, because a logo read from a sofa is the whole point of the
+   mode. It stands in for the heading — the base hides `#game-title` whenever
+   one is showing — so nothing under it repeats the name. */
+#title-logo {
+  max-width: min(58%, 420px);
+  max-height: 132px;
+  margin: 0 0 4px;
+  object-position: left bottom;
+  filter: drop-shadow(0 4px 20px rgb(0 0 0 / 0.85));
+}
+
+/* The fallback when a game has no logo, sized to sit where one would have. */
+#game-title {
+  flex: none;
+  margin: 0;
+  font-family: var(--bp-font);
+  --title-size: 54px;
+  --title-stretch: 100%;
+  --title-tracking: -0.02em;
+  --title-leading: 1.02;
+  font-weight: 800;
+  text-transform: none;
+  text-shadow: 0 4px 22px rgb(0 0 0 / 0.9);
+}
+
+#notice {
+  flex: none;
+  margin-top: 8px;
+  max-width: 60%;
+  color: var(--bp-dim);
+}
+
+/* ---------------------------------------------------------------- the rail */
+
+#game-list {
+  flex: none;
+  max-height: none;
+  margin: 20px 0 0;
+  padding: 4px 0 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+#game-list::-webkit-scrollbar {
+  display: none;
+}
+
+.game-row {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: 96px;
+  padding: 0;
+  gap: 0;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  scroll-snap-align: center;
+  transition: transform 160ms var(--ease, ease), filter 160ms var(--ease, ease);
+  transform-origin: center bottom;
+  filter: brightness(0.55) saturate(0.7);
+}
+
+.game-row:hover {
+  filter: brightness(0.8) saturate(0.9);
+}
+
+/* The selected cover comes forward and lights up. On a television this is the
+   only cue that survives being looked at from across a room, which is why it
+   is scale and brightness rather than a one-pixel border. */
+.game-row[aria-selected="true"] {
+  transform: scale(1.14);
+  filter: none;
+}
+
+.game-row__cover {
+  display: block;
+  width: 96px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #101720;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.6);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  box-shadow:
+    0 10px 26px rgb(0 0 0 / 0.75),
+    0 0 0 3px var(--accent, #ffffff);
+}
+
+.game-row__cover--empty {
+  color: var(--bp-ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* The cover says which game it is. A name under every one of them turns a
+   shelf into a spreadsheet. */
+.game-row__body,
+.game-row__dot {
+  display: none;
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 18px 0 0;
+  padding: 0;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn--play {
+  flex: 0 0 auto;
+  width: 210px;
+  height: 50px;
+  border-radius: 999px;
+  font-family: var(--bp-font);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.btn--eject {
+  width: 54px;
+  height: 50px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  color: var(--bp-ink);
+  backdrop-filter: blur(8px);
+}
+
+.btn--eject:hover:not(:disabled) {
+  background: rgb(255 51 68 / 0.22);
+  border-color: #ff5566;
+  color: #ff8f9a;
+}
+
+.btn:disabled {
+  background: rgb(255 255 255 / 0.07);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  color: rgb(255 255 255 / 0.35);
+  box-shadow: none;
+}
+
+/* Thick enough to find from the sofa. */
+body.is-gamepad :focus {
+  outline: 3px solid var(--accent, #ffffff);
+  outline-offset: 4px;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: #06090f;
+  color: var(--bp-dim);
+}
+
+#placeholder-initials {
+  color: var(--bp-ink);
+}
+
+.pad-badge {
+  background: var(--accent, #ffffff);
+  color: var(--accent-ink);
+}

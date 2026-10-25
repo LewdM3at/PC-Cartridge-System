@@ -1,0 +1,16 @@
+{
+  "name": "pc-gamepak-ui",
+  "version": "1.2.0",
+  "description": "Dark popup UI for the PC GamePak",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0"
+  }
+}

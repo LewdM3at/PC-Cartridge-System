@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", ENV{ID_FS_USAGE}=="filesystem", TAG+="systemd", ENV{SYSTEMD_WANTS}="pc-gamepak@%k.service"
+ACTION=="remove", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", TAG+="systemd", ENV{SYSTEMD_WANTS}="pc-gamepak-remove@%k.service"

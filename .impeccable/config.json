@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "buried-raster",
+        "value": "*",
+        "files": [
+          "tauri-ui/app/index.html"
+        ],
+        "createdAt": "2026-09-27T08:51:49.29Z",
+        "reason": "Claude verified in critique 2026-09-27: #cover-img-b is the collection cross-fade layer, opacity 0 until .is-crossfaded and display:none while it has no src"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "tauri-ui/app/create.html"
+        ],
+        "createdAt": "2026-10-03T07:20:00Z",
+        "reason": "Claude verified 2026-10-03: the flagged motion is create.css's #progress-fill.is-indeterminate sweep, an indeterminate progress bar shown only while a write step has no byte count; it scrolls no content and stops under prefers-reduced-motion"
+      }
+    ]
+  }
+}

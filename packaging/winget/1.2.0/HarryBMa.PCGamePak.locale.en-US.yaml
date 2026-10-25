@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+
+PackageIdentifier: HarryBMa.PCGamePak
+PackageVersion: 1.2.0
+PackageLocale: en-US
+
+Publisher: HarryBMa
+PublisherUrl: https://github.com/HarryBMa
+PublisherSupportUrl: https://github.com/HarryBMa/pc-gamepak/issues
+
+PackageName: PC GamePak
+PackageUrl: https://github.com/HarryBMa/pc-gamepak
+Moniker: pc-gamepak
+
+License: MIT
+LicenseUrl: https://github.com/HarryBMa/pc-gamepak/blob/main/LICENSE
+Copyright: Copyright (c) HarryBMa
+
+ShortDescription: Turn removable storage into physical game cartridges.
+Description: |-
+  A cartridge is a small drive in a pocketable enclosure with a game on it. Plug
+  it into a USB port and a launcher appears showing the game's cover art, with a
+  Play button and an Eject button.
+
+  A cartridge is an ordinary drive with a cartridge.conf text file at its root.
+  There are no scripts to write and nothing to allowlist, because nothing on a
+  cartridge is ever executed automatically - pressing Play is the gate.
+
+  Includes a wizard (pc-gamepak --create) that formats a drive, copies a game
+  onto it, fetches cover art, and checks every file it wrote by reading the
+  cartridge back and comparing CRC-32 sums.
+
+Tags:
+  - games
+  - launcher
+  - usb
+  - nvme
+  - steam
+  - portable
+  - cartridge
+
+ReleaseNotes: |-
+  A GamePak can now be started by any NFC card or barcode: tap or scan, and the
+  launcher opens ready, with Play to start. A GamePak can be a game on another
+  PC, started there on the tap and streamed with Moonlight on Play. Emulated
+  games can be made into cartridges that carry their ROM, listed by Pegasus
+  and ES-DE.
+
+  The memory card is drawn as a card with its saves round it. The app and the
+  wizard have new icons that read at taskbar size. Windows no longer opens an
+  Explorer window beside the launcher when a cartridge goes in.
+
+  WinGet installs the two executables and puts them on PATH. It cannot register
+  the watcher's logon task, so a cartridge will not open its launcher on insert
+  until you run the installer once:
+
+    powershell -ExecutionPolicy Bypass -File install.ps1 -Mode Watcher
+
+  install.ps1 ships in the windows\ folder of the installed package. The wizard
+  needs none of that and works immediately:
+
+    pc-gamepak --create
+ReleaseNotesUrl: https://github.com/HarryBMa/pc-gamepak/releases/tag/v1.2.0
+
+Documentations:
+  - DocumentLabel: README
+    DocumentUrl: https://github.com/HarryBMa/pc-gamepak/blob/main/README.md
+
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

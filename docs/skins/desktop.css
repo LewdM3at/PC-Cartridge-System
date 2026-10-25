@@ -1,0 +1,331 @@
+/* ==========================================================================
+   Desktop — games as a grid of shortcuts, with a taskbar.
+
+   The variation: the list is a **grid** rather than a column, which is the
+   layout the controller has to handle differently — up and down move by a row
+   rather than by one, and the launcher works the row width out from where the
+   tiles actually sit.
+
+   Widest of the set, because a grid wants room to be a grid.
+   ========================================================================== */
+
+:root {
+  --skin-width: 620;
+  --skin-height: 470;
+  --skin-art: icon;
+
+  --accent: #00a8ff;
+  --accent-ink: #ffffff;
+  --radius: 6px;
+
+  --desktop-bg: #0d1b2a;
+  --desktop-wallpaper: radial-gradient(circle at 50% 30%, #1b263b 0%, #0d1b2a 100%);
+  --desktop-surface: rgb(13 27 42 / 0.85);
+  --desktop-select-bg: rgb(65 90 119 / 0.5);
+  --desktop-select-border: #778da9;
+  --desktop-taskbar-bg: #101720;
+  --desktop-taskbar-border: #212d3d;
+  --desktop-accent: #00a8ff;
+  --desktop-text: #ffffff;
+  --desktop-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+#card {
+  background: var(--desktop-bg);
+  background-image: var(--desktop-wallpaper);
+  color: var(--desktop-text);
+  font-family: var(--desktop-font);
+  border-radius: 6px;
+}
+
+#face {
+  border-radius: 6px;
+}
+
+/* The wallpaper is the gradient above, so the cover art stays out of it. */
+#plate,
+#scrim-top,
+#scrim-bottom,
+#cart-mark {
+  display: none;
+}
+
+/* ------------------------------------------------------------- the title bar */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 36px;
+  background: var(--desktop-surface);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--desktop-taskbar-border);
+  border-radius: 6px 6px 0 0;
+}
+
+#chrome {
+  height: 36px;
+  padding: 0 12px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+#chrome .icon-btn {
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid var(--desktop-taskbar-border);
+  color: #e2e8f0;
+}
+
+#chrome .icon-btn:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: var(--desktop-select-border);
+}
+
+#chrome .icon-btn--close:hover {
+  background: rgb(232 67 50 / 0.2);
+  border-color: #e84332;
+  color: #ff8f80;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 36px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  position: absolute;
+  top: -28px;
+  left: 14px;
+  right: 110px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-family: var(--desktop-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--desktop-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On a desktop the selected shortcut is named under its icon, so the big
+   headline is a status line at the foot rather than a poster title. */
+#game-title {
+  order: 1;
+  flex: none;
+  margin: 0;
+  padding: 6px 16px;
+  font-family: var(--desktop-font);
+  font-size: 11px;
+  font-weight: 500;
+  font-stretch: 100%;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+  color: #a0aec0;
+  background: rgb(16 23 32 / 0.6);
+  border-top: 1px solid var(--desktop-taskbar-border);
+}
+
+#title-logo {
+  max-height: 16px;
+}
+
+#notice {
+  order: 1;
+  padding: 0 16px 6px;
+  color: #a0aec0;
+}
+
+/* --------------------------------------------------------------- the grid */
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  grid-auto-rows: max-content;
+  gap: 20px 16px;
+  align-items: start;
+  justify-items: center;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.22) transparent;
+}
+
+.game-row {
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 88px;
+  gap: 0;
+  padding: 8px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.game-row:hover {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.15);
+}
+
+.game-row[aria-selected="true"] {
+  background: var(--desktop-select-bg);
+  border-color: var(--desktop-select-border);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+}
+
+.game-row__cover {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #1b263b;
+  box-shadow:
+    0 4px 10px rgb(0 0 0 / 0.4),
+    0 0 0 1px rgb(255 255 255 / 0.15);
+  transition: transform 150ms ease;
+}
+
+.game-row:hover .game-row__cover {
+  transform: translateY(-2px);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  box-shadow:
+    0 6px 16px rgb(0 168 255 / 0.4),
+    0 0 0 2px var(--desktop-accent);
+}
+
+.game-row__cover--empty {
+  color: #9fb3c8;
+  font-size: 15px;
+}
+
+.game-row__body {
+  width: 100%;
+  min-width: 0;
+}
+
+.game-row__title {
+  margin-top: 8px;
+  font-family: var(--desktop-font);
+  font-size: 11px;
+  font-weight: 500;
+  color: #ffffff;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+}
+
+/* No room under an icon for a second line. */
+.game-row__meta {
+  display: none;
+}
+
+.game-row__dot {
+  position: absolute;
+  top: 6px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4a5568;
+  border: 2px solid var(--desktop-bg);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: #00e676;
+  border-color: var(--desktop-bg);
+  box-shadow: 0 0 8px #00e676;
+}
+
+/* ------------------------------------------------------------- the taskbar */
+
+#button-row {
+  order: 2;
+  flex: none;
+  margin: 0;
+  padding: 10px 16px;
+  gap: 12px;
+  align-items: center;
+  background: var(--desktop-taskbar-bg);
+  border-top: 1px solid var(--desktop-taskbar-border);
+}
+
+.btn--play {
+  height: 38px;
+  border-radius: 6px;
+  font-family: var(--desktop-font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0077e6 0%, #0056b3 100%);
+  border: 1px solid #0088ff;
+  box-shadow: 0 2px 6px rgb(0 119 230 / 0.3);
+}
+
+.btn--play:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0088ff 0%, #0066cc 100%);
+}
+
+.btn--eject {
+  width: 42px;
+  height: 38px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.05);
+  border: 1px solid var(--desktop-taskbar-border);
+  color: #e2e8f0;
+}
+
+.btn--eject:hover:not(:disabled) {
+  background: rgb(255 51 68 / 0.15);
+  border-color: #ff3344;
+  color: #ff3344;
+}
+
+.btn:disabled {
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid var(--desktop-taskbar-border);
+  color: #5a6b7d;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--desktop-bg);
+  color: #a0aec0;
+}
+
+.pad-badge {
+  background: var(--desktop-accent);
+  color: #06121d;
+}

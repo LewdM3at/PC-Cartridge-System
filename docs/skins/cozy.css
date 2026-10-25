@@ -1,0 +1,280 @@
+/* ==========================================================================
+   Cozy — cream, rounded, and light.
+
+   The variation: the only **light** skin, and the only one that hides the
+   artwork behind the list rather than showing it. Cream and brown do not sit
+   on somebody's cover art without one of them losing, so the picture goes to
+   the row thumbnails and the window is paper.
+   ========================================================================== */
+
+:root {
+  --skin-width: 440;
+  --skin-height: 660;
+  --skin-art: grid;
+
+  --accent: #d99b6c;
+  --accent-ink: #ffffff;
+  --radius: 16px;
+
+  --cozy-bg: #f7f3e9;
+  --cozy-surface: #ffffff;
+  --cozy-header: #ebe3d5;
+  --cozy-border: #d4c5b3;
+  --cozy-accent: #d99b6c;
+  --cozy-accent-shadow: #b87b4c;
+  --cozy-text: #5c4738;
+  --cozy-subtext: #8c7663;
+  --cozy-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+#card {
+  background-color: var(--cozy-bg);
+  color: var(--cozy-text);
+  font-family: var(--cozy-font);
+  border: 4px solid var(--cozy-border);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px -14px rgb(70 50 35 / 0.45);
+}
+
+#face {
+  border-radius: 12px;
+}
+
+/* Paper, not a poster. */
+#plate,
+#scrim-top,
+#scrim-bottom,
+#cart-mark {
+  display: none;
+}
+
+/* ------------------------------------------------------------- the header */
+
+#skin-panel {
+  inset: 0 0 auto 0;
+  height: 46px;
+  background: var(--cozy-header);
+  border-bottom: 2px dashed var(--cozy-border);
+  border-radius: 12px 12px 0 0;
+}
+
+#chrome {
+  height: 46px;
+  padding: 0 12px 0 0;
+  align-items: center;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+}
+
+#chrome .icon-btn {
+  border-radius: 999px;
+  background: var(--cozy-surface);
+  border: 2px solid var(--cozy-border);
+  color: var(--cozy-subtext);
+}
+
+#chrome .icon-btn:hover {
+  background: #fff8f0;
+  border-color: var(--cozy-accent);
+  color: var(--cozy-text);
+}
+
+#chrome .icon-btn--close:hover {
+  background: #ffeee6;
+  border-color: #c9754a;
+  color: #a85c34;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 46px 0 0 0;
+  margin-top: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 14px 18px 0;
+  font-family: var(--cozy-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cozy-subtext);
+}
+
+#game-title {
+  order: -1;
+  flex: none;
+  margin: 0;
+  padding: 4px 18px 12px;
+  font-family: var(--cozy-font);
+  font-size: 24px;
+  font-weight: 700;
+  font-stretch: 100%;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  text-shadow: none;
+  color: var(--cozy-text);
+}
+
+#notice {
+  padding: 0 18px 8px;
+  color: var(--cozy-subtext);
+}
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0;
+  padding: 0 16px 16px;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cozy-border) transparent;
+}
+
+.game-row {
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--cozy-surface);
+  border: 2px solid #e6ded0;
+  border-radius: 12px;
+  color: var(--cozy-text);
+  transition: transform 100ms ease, border-color 100ms ease;
+}
+
+.game-row:hover {
+  transform: translateY(-1px);
+  border-color: #cbb8a0;
+}
+
+.game-row[aria-selected="true"] {
+  background: #fff8f0;
+  border-color: var(--cozy-accent);
+  box-shadow: 0 4px 10px rgb(217 155 108 / 0.2);
+}
+
+.game-row__cover {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e6ded0;
+  background: var(--cozy-header);
+}
+
+.game-row__cover--empty {
+  color: var(--cozy-accent);
+  background: var(--cozy-header);
+}
+
+.game-row__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cozy-text);
+}
+
+.game-row__meta {
+  font-size: 11px;
+  color: var(--cozy-subtext);
+}
+
+.game-row__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cozy-border);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: #7ae582;
+  box-shadow: 0 0 6px #7ae582;
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 0;
+  padding: 12px 18px;
+  gap: 10px;
+  background: var(--cozy-header);
+  border-top: 2px dashed var(--cozy-border);
+}
+
+.btn--play {
+  height: 44px;
+  border-radius: 20px;
+  font-family: var(--cozy-font);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #ffffff;
+  background: var(--cozy-accent);
+  border: 0;
+  box-shadow: 0 4px 0 var(--cozy-accent-shadow);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.btn--play:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--cozy-accent-shadow);
+}
+
+.btn--eject {
+  width: 48px;
+  height: 44px;
+  border-radius: 20px;
+  background: var(--cozy-surface);
+  border: 2px solid var(--cozy-border);
+  color: var(--cozy-subtext);
+}
+
+.btn--eject:hover:not(:disabled) {
+  border-color: var(--cozy-accent);
+  color: var(--cozy-text);
+}
+
+.btn:disabled {
+  background: #efe8dc;
+  border: 2px solid var(--cozy-border);
+  color: #b3a493;
+  box-shadow: none;
+}
+
+/* A dark focus ring, because everything here is light. */
+.btn:focus-visible,
+body.is-gamepad :focus {
+  outline: 2px solid var(--cozy-text);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--cozy-bg);
+  color: var(--cozy-subtext);
+}
+
+#placeholder-initials {
+  color: var(--cozy-accent);
+}
+
+.pad-badge {
+  background: var(--cozy-accent);
+  color: #ffffff;
+}

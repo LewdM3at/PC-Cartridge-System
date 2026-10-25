@@ -1,0 +1,314 @@
+/* ==========================================================================
+   Atomic — translucent purple plastic, 1999. Frosted chassis over the hero.
+
+   Art slots: the hero fills the window, the rail is frosted glass sitting on
+   top of it, and each row shows a cover through the blur. It is the only skin
+   that puts `backdrop-filter` between the interface and the artwork, which is
+   what makes the plastic read as plastic: you can see the game through it.
+
+   Ported from a design written against a different set of class names.
+   Comfortaa is not a system font and `font-src 'self'` forbids fetching one,
+   so this leans on the rounded system UI face instead.
+   ========================================================================== */
+
+:root {
+  --skin-width: 440;
+  --skin-height: 660;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: none;
+
+  --accent: #00f0ff;
+  --accent-ink: #12091c;
+  --radius: 14px;
+
+  --at-bg: #12091c;
+  --at-shell: rgb(82 38 110 / 0.45);
+  --at-edge: rgb(255 255 255 / 0.18);
+  --at-cyan: #00f0ff;
+  --at-magenta: #ff007f;
+  --at-ink: #f3e5f5;
+  --at-muted: #c79fd6;
+  --at-round: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system,
+    "Nunito", sans-serif;
+}
+
+#card {
+  background: var(--at-bg);
+  color: var(--at-ink);
+  font-family: var(--at-round);
+  border-radius: 14px;
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 0.37),
+    inset 0 0 0 1px var(--at-edge);
+}
+
+#face {
+  border-radius: 14px;
+}
+
+/* The hero is the PCB you can see through the shell, so it stays lit rather
+   than being dimmed the way a background would be. */
+#plate img {
+  filter: saturate(1.25) brightness(0.72);
+}
+
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(18 9 28 / 0.35) 0%,
+    rgb(18 9 28 / 0.62) 55%,
+    rgb(18 9 28 / 0.88) 100%
+  );
+}
+
+#cart-mark {
+  max-height: 26px;
+  opacity: 0.7;
+}
+
+/* ------------------------------------------------------------- the chrome */
+
+#chrome {
+  height: 46px;
+  padding: 0 12px 0 0;
+  align-items: center;
+}
+
+#chrome .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--at-shell);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid var(--at-edge);
+  color: var(--at-ink);
+}
+
+#chrome .icon-btn:hover {
+  border-color: var(--at-cyan);
+  box-shadow: 0 0 14px rgb(0 240 255 / 0.4);
+}
+
+#chrome .icon-btn--close:hover {
+  border-color: var(--at-magenta);
+  box-shadow: 0 0 14px rgb(255 0 127 / 0.4);
+  color: #ffd6e8;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 46px 0 0 0;
+  margin-top: 0;
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+#eyebrow {
+  order: -2;
+  flex: none;
+  margin: 0;
+  padding: 0 4px 4px;
+  font-family: var(--at-round);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--at-cyan);
+  text-shadow: 0 0 12px rgb(0 240 255 / 0.6);
+}
+
+#game-title {
+  order: -1;
+  flex: none;
+  margin: 0;
+  padding: 0 4px 14px;
+  font-family: var(--at-round);
+  --title-size: 26px;
+  --title-stretch: 100%;
+  --title-tracking: -0.01em;
+  --title-leading: 1.15;
+  font-weight: 700;
+  text-transform: none;
+  color: var(--at-ink);
+  text-shadow: 0 2px 18px rgb(0 0 0 / 0.8);
+}
+
+#notice {
+  padding: 0 4px 8px;
+  color: var(--at-muted);
+}
+
+/* ---------------------------------------------------------- the frosted rail
+
+   The shell: translucent, blurred, with the circuit dots printed on it. The
+   artwork stays visible through all of it, which is the whole idea. */
+
+#game-list {
+  flex: 1;
+  max-height: none;
+  margin: 0;
+  padding: 10px;
+  gap: 8px;
+  border-radius: 12px;
+  background: var(--at-shell);
+  background-image: radial-gradient(rgb(0 240 255 / 0.1) 1px, transparent 0);
+  background-size: 16px 16px;
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid var(--at-edge);
+  scrollbar-width: thin;
+  scrollbar-color: rgb(0 240 255 / 0.35) transparent;
+}
+
+.game-row {
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.game-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--at-cyan);
+  box-shadow: 0 0 20px rgb(0 240 255 / 0.3);
+}
+
+.game-row[aria-selected="true"] {
+  background: rgb(0 240 255 / 0.14);
+  border-color: var(--at-cyan);
+  box-shadow:
+    0 0 22px rgb(0 240 255 / 0.35),
+    inset 0 0 20px rgb(0 240 255 / 0.08);
+}
+
+.game-row__cover {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--at-edge);
+}
+
+.game-row__cover--empty {
+  background: rgb(82 38 110 / 0.6);
+  color: var(--at-cyan);
+  font-weight: 700;
+}
+
+.game-row__title {
+  font-family: var(--at-round);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--at-ink);
+}
+
+.game-row__meta {
+  font-size: 11px;
+  color: var(--at-muted);
+}
+
+/* A jewel LED, the one opaque thing on the whole shell. */
+.game-row__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.15);
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: var(--at-magenta);
+  box-shadow: 0 0 10px var(--at-magenta);
+}
+
+/* ------------------------------------------------------------ the controls */
+
+#button-row {
+  flex: none;
+  margin: 12px 0 0;
+  padding: 0;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Jewel-toned buttons: translucent bodies with a lit rim. */
+.btn--play {
+  flex: 1;
+  height: 46px;
+  border-radius: 999px;
+  font-family: var(--at-round);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--accent-ink);
+  background: linear-gradient(180deg, #6cf7ff 0%, var(--at-cyan) 100%);
+  border: 1px solid rgb(255 255 255 / 0.5);
+  box-shadow:
+    0 0 22px rgb(0 240 255 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.btn--play:hover:not(:disabled) {
+  box-shadow:
+    0 0 30px rgb(0 240 255 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.8);
+}
+
+.btn--eject {
+  width: 50px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--at-shell);
+  backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid var(--at-edge);
+  color: var(--at-ink);
+}
+
+.btn--eject:hover:not(:disabled) {
+  border-color: var(--at-magenta);
+  color: #ffd6e8;
+  box-shadow: 0 0 18px rgb(255 0 127 / 0.4);
+}
+
+.btn:disabled {
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: rgb(243 229 245 / 0.35);
+  box-shadow: none;
+}
+
+.btn--play.is-launching {
+  background: linear-gradient(180deg, #ff7ac0 0%, var(--at-magenta) 100%);
+  box-shadow: 0 0 26px rgb(255 0 127 / 0.55);
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--at-bg);
+  color: var(--at-muted);
+}
+
+#placeholder-initials {
+  color: var(--at-cyan);
+}
+
+.pad-badge {
+  background: var(--at-magenta);
+  color: #ffffff;
+}

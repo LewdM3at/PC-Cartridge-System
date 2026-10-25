@@ -1,0 +1,2354 @@
+/* ==========================================================================
+   The launcher popup.
+
+   The window is a slot; the cartridge is seated in it. The art fills the face,
+   the title and the two actions sit over it, and everything else — the chrome,
+   the keycaps — is present only while someone is looking. Eject rides the whole
+   face out of the slot rather than closing a window.
+
+   Shared palette, type and fonts live in tokens.css.
+   ========================================================================== */
+
+@import "tokens.css";
+
+/* ==========================================================================
+   Card
+   ========================================================================== */
+
+#card {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  border-radius: var(--radius);
+  /* The shell takes the cover's own hue, so an ejected slot still belongs to
+     the cartridge that was in it. A trace of the sampled accent rather than a
+     hue channel, so the tint is whatever colour the sampler actually found. */
+  background: color-mix(in oklch, var(--accent) 4%, oklch(0.115 0 0));
+  isolation: isolate;
+  box-shadow:
+    inset 0 0 0 1px oklch(1 0 0 / 0.08),
+    0 20px 44px -14px oklch(0 0 0 / 0.7);
+  cursor: default;
+}
+
+/* ==========================================================================
+   The empty slot, behind the cartridge
+   ========================================================================== */
+
+/* Hidden until the face has actually left, rather than merely covered by it.
+   The artwork used to be what hid this, so a skin that hides `#plate` — and
+   three of them do, being a file list or a desktop rather than a poster — left
+   `#face` transparent and "Slot empty" showed through the middle of the window.
+   Both paths that reveal the slot, eject and an unreadable cartridge, add
+   `is-ejected` first. */
+#slot {
+  visibility: hidden;
+}
+
+#card.is-ejected #slot {
+  visibility: visible;
+}
+
+#slot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 40px;
+  text-align: center;
+  color: color-mix(in oklch, var(--accent) 8%, oklch(0.42 0 0));
+}
+
+/* "Safe to remove" is the last thing the window says, and it is said to
+   someone reaching for the drive across a room: it is the empty slot's
+   headline, not a caption. */
+#slot-label {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  font-stretch: 106%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--accent) 10%, var(--ink-2));
+}
+
+#btn-insert {
+  appearance: none;
+  margin-top: 4px;
+  height: 40px;
+  padding: 0 20px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-stretch: 106%;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid oklch(1 0 0 / 0.16);
+  background: transparent;
+  color: oklch(0.86 0.008 75);
+  cursor: pointer;
+  transition: border-color 200ms linear, color 200ms linear;
+}
+
+#btn-insert:hover {
+  border-color: var(--accent);
+  color: color-mix(in oklch, var(--accent) 78%, white);
+}
+
+/* ==========================================================================
+   The cartridge face
+   ========================================================================== */
+
+#face {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  overflow: hidden;
+  will-change: transform;
+  transform: translateY(0) rotate(0deg);
+  transition: transform 620ms var(--ease);
+}
+
+/* Out of the slot: down and slightly askew, the way a cartridge actually
+   leaves one. */
+#card.is-ejected #face {
+  transform: translateY(101%) rotate(1.4deg);
+}
+
+#plate {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+#cover-img,
+#cover-img-b {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The window is 3:4 and a store cover is 2:3, so filling the width leaves
+     about 70px of image to lose vertically. Centred, that took 35px off the
+     top — which is exactly where a cover puts its title. Anchoring high spends
+     the loss on the bottom instead, where the scrim already covers it. */
+  object-position: 50% 22%;
+  display: block;
+  /* Almost imperceptible: the art is alive without ever asking to be watched.
+     Kept shallow because every percent of zoom is more of the top gone. */
+  animation: om-drift 34s ease-in-out infinite;
+  transform-origin: 50% 22%;
+  transition: opacity 520ms var(--ease);
+}
+
+/* The second layer only exists so a collection can cross-fade between games. */
+#cover-img-b {
+  opacity: 0;
+}
+
+#card.is-crossfaded #cover-img {
+  opacity: 0;
+}
+
+#card.is-crossfaded #cover-img-b {
+  opacity: 1;
+}
+
+@keyframes om-drift {
+  0% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.05) translate3d(-0.8%, -0.6%, 0);
+  }
+  100% {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+}
+
+/* `display` on an id selector beats the browser's [hidden] rule, so a cover
+   that failed to decode would otherwise paint a broken-image glyph over the
+   placeholder — the one case the hidden attribute is set for. */
+#cover-img:not([src]),
+#cover-img[src=""],
+#cover-img[hidden],
+#cover-img-b:not([src]),
+#cover-img-b[src=""],
+#cover-img-b[hidden] {
+  display: none;
+}
+
+#cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink-3);
+  background: repeating-linear-gradient(
+    135deg,
+    oklch(0.185 0.005 65) 0 8px,
+    oklch(0.16 0.005 65) 8px 16px
+  );
+}
+
+#cover-placeholder.hidden {
+  display: none;
+}
+
+#cover-placeholder p {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+/* --- Scrims -------------------------------------------------------------
+   The art is arbitrary, so the type cannot rely on it being dark. */
+
+#scrim-top {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 110px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: linear-gradient(
+    to bottom,
+    oklch(0.1 0.004 65 / 0.66) 0%,
+    oklch(0.1 0.004 65 / 0.22) 60%,
+    transparent 100%
+  );
+}
+
+/* Every value here comes through a variable so the rule stays at one id.
+   Written the obvious way, the collection variant below was
+   `#card.is-collection #scrim-bottom` — two ids and a class, which outranks
+   the `#scrim-bottom` a skin writes. A skin that moved the scrim to sit over
+   part of the window got its `inset` and its gradient ignored the moment the
+   cartridge held more than one game, and the whole card went black behind the
+   artwork. The state sets variables; the skin sets properties. */
+#scrim-bottom {
+  position: absolute;
+  inset: var(--scrim-inset, auto 0 0 0);
+  height: var(--scrim-height, 52%);
+  border-radius: var(--scrim-radius, 0 0 var(--radius) var(--radius));
+  background: var(
+    --scrim-image,
+    /* a breath of the sampled colour, as if the art were lighting the shelf */
+      linear-gradient(
+          to top,
+          color-mix(in oklch, var(--accent) 10%, transparent) 0%,
+          transparent 42%
+        )
+        ,
+      linear-gradient(
+        to top,
+        oklch(0.09 0.004 65 / 0.98) 0%,
+        oklch(0.09 0.004 65 / 0.9) 22%,
+        oklch(0.1 0.004 65 / 0.58) 48%,
+        oklch(0.1 0.004 65 / 0.16) 76%,
+        transparent 100%
+      )
+  );
+}
+
+/* A collection's rail starts higher up the window than a single game's title
+   does, so its ground has to start higher too — but only where the rail is.
+   This used to be one sheet across the whole card, never below 30% black at
+   any point, which left the artwork veiled from edge to edge with nothing in
+   front of most of it. The top half is the picture; darken from where the
+   rail begins. */
+#card.is-collection {
+  --scrim-inset: 0;
+  --scrim-height: auto;
+  --scrim-radius: var(--radius);
+  --scrim-image:
+    linear-gradient(
+      to top,
+      color-mix(in oklch, var(--accent) 8%, transparent) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 34%,
+      oklch(0.09 0.004 65 / 0.28) 46%,
+      oklch(0.09 0.004 65 / 0.78) 62%,
+      oklch(0.09 0.004 65 / 0.95) 78%,
+      oklch(0.085 0.004 65 / 0.985) 100%
+    );
+}
+
+/* ==========================================================================
+   Top chrome — present only while someone is looking
+   ========================================================================== */
+
+#chrome {
+  position: relative;
+  /* Above the stage, the skin's own layers and any overlay drawn on #face.
+     A skin is free to position #stage absolutely — several do, to move the
+     list or turn the window on its side — and #stage comes later in the
+     markup, so at an equal z-index it covers these three buttons and eats
+     every click on them. Twice now that has shipped. The window's own
+     controls outranking everything a skin can draw is the fix; keeping each
+     skin clear of them by hand was not. */
+  z-index: 6;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 14px 14px 0 18px;
+}
+
+#chrome-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+#card:hover #chrome-actions,
+#chrome-actions:focus-within {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* A controller has no pointer to hover with, so the chrome simply stays. */
+body.is-gamepad #chrome-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#chrome .icon-btn {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: oklch(0.1 0.004 65 / 0.42);
+  color: oklch(0.86 0.008 75);
+}
+
+#chrome .icon-btn:hover {
+  background: oklch(0.1 0.004 65 / 0.72);
+}
+
+.icon-btn--close:hover {
+  background: oklch(0.68 0.19 27 / 0.9);
+  color: oklch(0.98 0.01 27);
+}
+
+/* Details is the one action a pad reaches by its own face button rather than
+   by moving focus, so it is the only one that carries a badge. */
+.pad-badge {
+  display: none;
+  place-items: center;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  font-weight: 700;
+}
+
+body.is-gamepad .pad-badge {
+  display: grid;
+}
+
+/* ==========================================================================
+   Stage: the title, the rail, and the two actions
+   ========================================================================== */
+
+#stage {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  padding: 0 20px 20px;
+}
+
+/* The collection's own name, when it has no logo: in the corner the logo would
+   hold, printed on the case rather than stacked over the game's title, and big
+   enough to read from the couch. Fixed rather than absolute because #face is
+   always transformed, which makes it the containing block: the name stays on
+   the cartridge and rides out with it on Eject. Only a collection prints one —
+   a single game already says its name in the title. */
+#eyebrow {
+  position: fixed;
+  top: 17px;
+  left: 20px;
+  z-index: 3;
+  max-width: 62%;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  font-stretch: 104%;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  color: var(--ink);
+  text-shadow: 0 1px 12px oklch(0 0 0 / 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 200ms linear;
+}
+
+/* The chrome appears on hover across the top; the name steps back, as the
+   logo mark does. */
+#card:hover #eyebrow {
+  opacity: 0.55;
+}
+
+#eyebrow[hidden] {
+  display: none;
+}
+
+#title-logo {
+  display: block;
+  max-width: min(88%, 360px);
+  max-height: 78px;
+  width: auto;
+  height: auto;
+  margin: 0 0 8px;
+  object-fit: contain;
+  object-position: left bottom;
+  filter: drop-shadow(0 2px 10px oklch(0 0 0 / 0.52));
+}
+
+#title-logo[hidden] {
+  display: none;
+}
+
+#stage.has-logo #game-title {
+  display: none;
+}
+
+/* Where the game actually lives — the one fact the launcher can state that
+   nothing else on screen implies. */
+#game-meta {
+  margin: 9px 0 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.7 0.008 75);
+}
+
+#game-meta[hidden] {
+  display: none;
+}
+
+/* Two variables deep on purpose. The outer one is the skin's and the base
+   never sets it; the inner one is the squeeze below, which only ever fills in
+   for a skin that said nothing. `#game-title.is-long` outranks the
+   `#game-title` a skin writes, so a skin that had picked an 11px title got the
+   squeeze's 30px for any name over fifteen characters while its neighbours
+   stayed small — and it did that whether the squeeze set `font-size` outright
+   or set the same variable the skin had set. Giving them separate names is
+   what stops them competing. */
+#game-title {
+  margin: 0;
+  font-size: var(--title-size, var(--auto-title-size, 40px));
+  font-weight: 800;
+  font-stretch: var(--title-stretch, var(--auto-title-stretch, 84%));
+  line-height: var(--title-leading, var(--auto-title-leading, 0.9));
+  letter-spacing: var(--title-tracking, var(--auto-title-tracking, -0.012em));
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: 0 2px 14px oklch(0 0 0 / 0.6);
+}
+
+/* Long titles give up width before they give up size. */
+#game-title.is-long {
+  --auto-title-size: 30px;
+  --auto-title-stretch: 76%;
+  --auto-title-tracking: -0.004em;
+  --auto-title-leading: 0.96;
+}
+
+/* Shown only when something is stopping Play from working. */
+#notice {
+  margin: 12px 0 0;
+  font-size: var(--text);
+  line-height: 1.5;
+  color: color-mix(in oklch, var(--danger) 72%, var(--ink));
+}
+
+#notice[hidden] {
+  display: none;
+}
+
+/* --- The two actions ---------------------------------------------------- */
+
+#button-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* With a rail above it the row sits closer: the selection and the button that
+   acts on it are one gesture. */
+#card.is-collection #button-row {
+  margin-top: 14px;
+}
+
+/* The ring is drawn on a wrapper so a pad's focus outline can sit outside the
+   button without the button's own overflow clipping it. */
+#play-ring {
+  flex: 1;
+  display: flex;
+  border-radius: 7px;
+}
+
+body.is-gamepad #play-ring:has(:focus) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn--play {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  height: 50px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12.5px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.3),
+    0 6px 18px -8px color-mix(in oklch, var(--accent) 80%, black);
+  transition: filter 180ms linear, transform 180ms var(--ease);
+}
+
+.btn--play:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.btn--play:disabled {
+  cursor: not-allowed;
+  background: oklch(0.3 0.005 65 / 0.85);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+/* One pass of light down the button, so a press that hands the screen to a
+   game still acknowledges itself before the window goes. */
+.btn__sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 24%,
+    oklch(1 0 0 / 0.55) 50%,
+    transparent 76%
+  );
+  transform: translateX(-110%);
+  opacity: 0;
+}
+
+.btn--play.is-launching .btn__sweep {
+  transform: translateX(110%);
+  opacity: 1;
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms linear;
+}
+
+.btn__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* Eject drops its text for an icon, so Play owns the width. */
+.btn--eject {
+  /* The pad badge hangs off the corner, so it needs something to hang from. */
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: 7px;
+  border: 1px solid oklch(1 0 0 / 0.15);
+  background: oklch(0.1 0.004 65 / 0.4);
+  color: oklch(0.88 0.008 75);
+  transition: border-color 200ms linear, color 200ms linear,
+    background-color 200ms linear;
+}
+
+.btn--eject:hover:not(:disabled) {
+  border-color: oklch(1 0 0 / 0.32);
+  color: oklch(0.99 0.006 75);
+  background: oklch(0.1 0.004 65 / 0.6);
+}
+
+.btn--eject:disabled {
+  cursor: not-allowed;
+  color: var(--ink-3);
+  border-color: oklch(1 0 0 / 0.08);
+}
+
+/* --- Prompts ------------------------------------------------------------
+   A keycap is only useful to someone with a keyboard, and only worth showing
+   once they have reached for the window. Face-button lettering differs between
+   Xbox, PlayStation and Switch pads, so a controller gets the action's own
+   icon instead — the one prompt that reads correctly on all three.
+
+   `is-gamepad` follows the device in someone's hands rather than the device
+   plugged in: gamepad.js sets it on the first button press and clears it on the
+   next keystroke, so a controller left on the table does not decide what a
+   person at the keyboard is shown. */
+
+.btn__key {
+  position: relative;
+  z-index: 1;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 3px 4px 2px;
+  border-radius: 2px;
+  background: oklch(0 0 0 / 0.2);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+#card:hover .btn__key {
+  opacity: 0.72;
+}
+
+.btn__pad-icon {
+  display: none;
+  position: relative;
+  z-index: 1;
+}
+
+body.is-gamepad .btn__key {
+  display: none;
+}
+
+body.is-gamepad .btn__pad-icon {
+  display: block;
+}
+
+/* ==========================================================================
+   The rail: which game Play acts on
+   ========================================================================== */
+
+#game-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 232px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#game-list[hidden] {
+  display: none;
+}
+
+.game-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 7px 10px 7px 7px;
+  border: 1px solid oklch(1 0 0 / 0.09);
+  border-radius: 8px;
+  background: oklch(0 0 0 / 0.32);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 200ms linear, background-color 200ms linear;
+}
+
+.game-row[aria-selected="true"] {
+  border-color: color-mix(in oklch, var(--accent) 60%, transparent);
+  background: oklch(0 0 0 / 0.5);
+}
+
+.game-row:hover {
+  border-color: oklch(1 0 0 / 0.18);
+}
+
+/* 2:3, which is what a cover actually is: Steam's library art is 600x900 and
+   SteamGridDB's portrait grids match it. The slot was 34x46, so even a correct
+   cover lost a sliver top and bottom.
+
+   `contain` rather than `cover` because not every game has a portrait cover to
+   give. Steam falls back to a 460x215 header, and cropping that to a portrait
+   slot leaves a vertical strip through the middle of a wide image — the reason
+   the older Tomb Raider entries looked mangled while the newer ones did not.
+   Letterboxed on the field below, a wide image reads as a wide image. */
+.game-row__cover {
+  flex: none;
+  width: 32px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: oklch(0.2 0.005 65);
+}
+
+/* No art for this game: the frame would just be an empty box. */
+.game-row__cover:not([src]),
+.game-row__cover[src=""] {
+  background: oklch(0.18 0.006 65);
+}
+
+.game-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.game-row__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-row__meta {
+  display: block;
+  margin-top: 3px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+  color: oklch(0.66 0.008 75);
+}
+
+/* Which one Play will start. A dot rather than a fill, so the row's own
+   artwork keeps its contrast. */
+.game-row__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 200ms linear;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  opacity: 1;
+}
+
+/* With a controller in hand the focus ring is the only way to see where you
+   are, so it stops being :focus-visible-only and is always drawn. */
+body.is-gamepad :focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+
+/* ==========================================================================
+   Details sheet
+   --------------------------------------------------------------------------
+   Two readings first — is the link healthy, is the drive nearly full — each
+   with its number set large. Everything that explains a reading hides behind
+   the icon on that reading, so the sheet is quiet until it is asked why.
+   ========================================================================== */
+
+#sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in oklch, var(--accent) 4%, oklch(0.135 0 0));
+  transform: translateY(100%);
+  transition: transform 340ms var(--ease);
+}
+
+#sheet[hidden] {
+  /* Kept in the layout so it can animate; hidden from the a11y tree instead. */
+  display: flex;
+  visibility: hidden;
+}
+
+#sheet.is-open {
+  transform: translateY(0);
+  visibility: visible;
+}
+
+#sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 14px 14px 20px;
+}
+
+#sheet-head h2 {
+  margin: 0;
+  min-width: 0;
+  font: inherit;
+}
+
+#sheet-head .icon-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: oklch(1 0 0 / 0.05);
+  color: oklch(0.78 0.008 75);
+}
+
+#sheet-head .icon-btn:hover {
+  background: oklch(0.68 0.19 27 / 0.9);
+  color: oklch(0.98 0.01 27);
+}
+
+/* Which cartridge this is: its art, its title, and the drive it came in on. */
+#sheet-id {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+#sheet-thumb {
+  flex: none;
+  width: 28px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 3px;
+  box-shadow: 0 3px 10px -4px oklch(0 0 0 / 0.8);
+}
+
+#sheet-thumb:not([src]),
+#sheet-thumb[src=""],
+#sheet-thumb[hidden] {
+  display: none;
+}
+
+#sheet-names {
+  display: block;
+  min-width: 0;
+}
+
+#sheet-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  font-stretch: 104%;
+  letter-spacing: -0.012em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#sheet-sub {
+  display: block;
+  margin-top: 2px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.6 0.008 75);
+}
+
+#sheet-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 20px 0;
+  overflow-y: auto;
+}
+
+/* --- The two readings --------------------------------------------------- */
+
+#readings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#readings:empty {
+  display: none;
+}
+
+.reading {
+  padding: 13px 14px;
+  border-radius: 9px;
+  background: oklch(1 0 0 / 0.035);
+  border: 1px solid oklch(1 0 0 / 0.06);
+}
+
+.reading__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reading__label {
+  margin: 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.58 0.008 75);
+}
+
+.reading__value {
+  margin: 7px 0 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.reading__unit {
+  font-size: 12px;
+  color: oklch(0.66 0.008 75);
+}
+
+/* A second reading on the same card — the transport, under the link speed. */
+.reading__note {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--accent) 80%, var(--ink));
+}
+
+.reading__note::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.reading__bar {
+  height: 4px;
+  margin-top: 12px;
+  border-radius: 2px;
+  background: oklch(0 0 0 / 0.5);
+  overflow: hidden;
+}
+
+.reading__fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    color-mix(in oklch, var(--accent) 76%, oklch(0.53 0.19 20))
+  );
+}
+
+/* The advisory is a footnote to one reading, so it lives behind that
+   reading's icon rather than under the whole sheet. */
+.reading__why {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid oklch(1 0 0 / 0.14);
+  border-radius: 50%;
+  background: transparent;
+  color: oklch(0.75 0.008 75);
+  cursor: pointer;
+  transition: color 180ms linear, border-color 180ms linear,
+    background-color 180ms linear;
+}
+
+.reading__why:hover {
+  color: var(--ink);
+  border-color: oklch(1 0 0 / 0.3);
+}
+
+.reading__why[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+/* Opens on grid-template-rows rather than max-height. A max-height needs a
+   number picked in advance, and an advisory longer than the guess is silently
+   cut off; 0fr to 1fr is however tall the text actually is. The spacing above
+   moved into the paragraph's padding so it is clipped with everything else,
+   rather than animating a margin the layout has to reflow around. */
+.reading__advisory {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 400ms var(--ease), opacity 280ms ease;
+}
+
+.reading__advisory.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.reading__advisory p {
+  /* Both required for the row to collapse: a grid item's automatic minimum
+     size is its content, which would hold the row open at 0fr. */
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding-top: 9px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: oklch(0.82 0.008 75);
+}
+
+.reading__advisory strong {
+  font-weight: 700;
+  color: oklch(0.97 0.006 75);
+}
+
+/* --- Specs and paths ---------------------------------------------------- */
+
+#specs {
+  margin: 0;
+}
+
+#specs:empty {
+  display: none;
+}
+
+#specs > div {
+  padding: 11px 0;
+  border-bottom: 1px solid oklch(1 0 0 / 0.055);
+}
+
+#specs dt {
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+#specs dd {
+  margin: 5px 0 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text);
+  line-height: 1.5;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+#specs dd.is-muted {
+  color: var(--ink-3);
+}
+
+.disclosure {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid oklch(1 0 0 / 0.07);
+  width: 100%;
+  background: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: oklch(0.72 0.008 75);
+  cursor: pointer;
+  transition: color 180ms linear;
+}
+
+.disclosure:hover {
+  color: oklch(0.97 0.006 75);
+}
+
+.disclosure__caret {
+  flex: none;
+  transition: transform 320ms var(--ease);
+}
+
+.disclosure[aria-expanded="true"] .disclosure__caret {
+  transform: rotate(90deg);
+}
+
+/* Same fold as the advisory above, and for the same reason: a cartridge with
+   six games has six path rows, and no max-height guess fits both that and a
+   cartridge with one. */
+#paths-fold {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 420ms var(--ease), opacity 300ms ease;
+}
+
+#paths-fold[hidden] {
+  /* Kept in the layout so it can animate. */
+  display: grid;
+}
+
+#paths-fold.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+#paths {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-top: 12px;
+}
+
+#paths dt {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.56 0.008 75);
+}
+
+#paths dd {
+  margin: 4px 0 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: oklch(0.86 0.008 75);
+  overflow-wrap: anywhere;
+}
+
+#sheet-footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 20px;
+}
+
+/* The way out, and the only filled-width control on the sheet. */
+
+
+/* Settings are reached from nowhere else, so the link stays — quiet enough
+   not to compete with the way back to the game. */
+.sheet-link {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 180ms linear;
+}
+
+.sheet-link:hover,
+.sheet-link:focus-visible {
+  color: var(--accent);
+}
+
+/* ==========================================================================
+   Toast
+   ========================================================================== */
+
+#toast {
+  position: absolute;
+  inset: auto 20px 92px;
+  /* Above the memory card view (15), whose errors it also carries. */
+  z-index: 20;
+  margin: 0;
+  font-size: var(--text);
+  font-weight: 600;
+  text-align: center;
+  padding: 9px 12px;
+  border-radius: 5px;
+  background: oklch(0.11 0.004 65 / 0.95);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.1);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 190ms linear, transform 240ms var(--ease);
+  pointer-events: none;
+}
+
+#toast.is-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#toast.is-error {
+  color: color-mix(in oklch, var(--danger) 78%, var(--ink));
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--danger) 34%, transparent);
+}
+
+/* A failed launch is the one message worth reading twice, so it waits for the
+   next action or a click instead of leaving on a timer. */
+#toast.is-sticky {
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: text;
+}
+
+#toast.is-sticky:hover {
+  background: oklch(0.14 0.004 65 / 0.97);
+}
+
+/* ==========================================================================
+   Shared
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* The drift is ambient rather than feedback, so it goes entirely. The seat
+     motion stays: it is the answer to pressing Eject, not decoration. */
+  #cover-img,
+  #cover-img-b {
+    animation: none;
+    transform: scale(1.02);
+  }
+}
+
+/* A collection's own logo, top left. It identifies the cartridge; the heading
+   below names whichever game is selected. Small and slightly held back, so it
+   reads as a mark on the case rather than as the artwork. */
+#cart-mark {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  z-index: 3;
+  max-width: 44%;
+  max-height: 46px;
+  object-fit: contain;
+  object-position: left top;
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 10px oklch(0 0 0 / 0.6));
+  pointer-events: none;
+}
+
+#cart-mark[hidden] {
+  display: none;
+}
+
+/* The chrome appears on hover in the same corner's opposite side; when it does,
+   the mark steps back so the two never read as one row of clutter. */
+#card:hover #cart-mark {
+  opacity: 0.5;
+}
+
+/* ==========================================================================
+   The skin's layer
+
+   Nothing in the stock look, and nothing here draws itself. A skin fills these
+   with pseudo-elements: `#skin-chrome` sits over the artwork for anything a
+   frame would carry, and `#skin-panel` sits behind the controls for anything a
+   front panel would. Both ignore the pointer, so whatever a skin puts there
+   cannot get between anyone and a button.
+   ========================================================================== */
+
+#skin-chrome,
+#skin-panel {
+  position: absolute;
+  pointer-events: none;
+}
+
+#skin-chrome {
+  inset: 0;
+  z-index: 5;
+}
+
+#skin-panel {
+  inset: auto 0 0 0;
+  height: 0;
+  z-index: 2;
+}
+
+/* The initials, large enough to read across a room, in the colour sampled from
+   whatever art the cartridge does have — so a half-filled collection still
+   looks like one cartridge rather than a set of error states. */
+#placeholder-initials {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 800;
+  font-stretch: 84%;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklch, var(--accent) 55%, var(--ink-3));
+}
+
+#placeholder-name {
+  margin: 0;
+  max-width: 15ch;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* A row whose game has no picture of the kind the skin asked for. Same box as
+   the image it replaces, so nothing in a list or a grid shifts. */
+.game-row__cover--empty {
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: color-mix(in oklch, var(--accent) 60%, var(--ink-3));
+  background: oklch(0.24 0.006 65);
+}
+
+/* ==========================================================================
+   Play stats — off in the stock window, on in any skin that shows them
+   --------------------------------------------------------------------------
+   The details sheet already says all of this. A skin that wants it on the
+   face sets `display` on #play-stats; the numbers are also on #card as custom
+   properties and data attributes (see docs/SKINNING.md), for a skin that would
+   rather draw them itself.
+   ========================================================================== */
+
+.play-stats {
+  display: none;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.play-stats__time {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.play-stats__last {
+  color: var(--ink-3);
+}
+
+.play-stats__last:not(:empty)::before {
+  content: "· ";
+}
+
+/* How far through the main story, from playtime and HowLongToBeat. */
+.play-stats__bar {
+  flex-basis: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--ink) 16%, transparent);
+  overflow: hidden;
+}
+
+#card[data-hltb="no"] .play-stats__bar {
+  display: none;
+}
+
+.play-stats__fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--progress, 0) * 100%);
+  background: var(--accent);
+}
+
+/* ==========================================================================
+   Unboxing — the first time this machine sees a cartridge
+   ==========================================================================
+   A box comes up, its shrink-wrap catches the light and slides off, the lid
+   swings open on its left edge, and the cartridge is lifted out towards you
+   before the window fades to the launcher. The timings below are the whole
+   choreography; main.js only starts it, skips it, and waits for the last
+   animation to end. */
+
+#unbox {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 80% at 50% 38%, color-mix(in oklch, var(--accent) 16%, oklch(0.2 0 0)), oklch(0.08 0 0) 72%);
+  cursor: pointer;
+}
+
+#unbox[hidden] {
+  display: none;
+}
+
+/* Sized by whichever edge runs out first: a skin can make the window wide and
+   short, and a box sized by width alone then ran off the top and bottom. */
+.unbox__stage {
+  height: min(78vh, calc(64vw * 4 / 3));
+  aspect-ratio: 3 / 4;
+  perspective: 1100px;
+}
+
+.unbox__box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  border-radius: 6px;
+  box-shadow: 0 34px 60px -24px oklch(0 0 0 / 0.9);
+}
+
+/* The inside of the case: a dark tray the cartridge sits in. */
+.unbox__inside {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: linear-gradient(160deg, oklch(0.2 0 0), oklch(0.1 0 0));
+  box-shadow: inset 0 0 0 2px oklch(1 0 0 / 0.06), inset 0 12px 30px oklch(0 0 0 / 0.7);
+}
+
+/* A cartridge shape: a shell with grip ridges along the top and a label on
+   its face. Plain enough to stand for any system's. */
+.unbox__cart {
+  position: relative;
+  width: 76%;
+  height: 78%;
+  padding: 16% 9% 9%;
+  border-radius: 8px 8px 12px 12px;
+  background: linear-gradient(170deg, oklch(0.3 0.005 75), oklch(0.17 0.005 75));
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.14),
+    inset 0 -3px 8px oklch(0 0 0 / 0.5),
+    0 10px 24px -8px oklch(0 0 0 / 0.8);
+}
+
+.unbox__ridges {
+  position: absolute;
+  top: 5%;
+  left: 18%;
+  right: 18%;
+  height: 7%;
+  background: repeating-linear-gradient(90deg, oklch(0 0 0 / 0.45) 0 2px, transparent 2px 6px);
+  border-radius: 2px;
+}
+
+.unbox__label {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 3px;
+  background: oklch(0.14 0 0);
+}
+
+.unbox__label-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.unbox__logo {
+  position: relative;
+  max-width: 82%;
+  max-height: 42%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px oklch(0 0 0 / 0.7));
+}
+
+.unbox__title {
+  position: relative;
+  padding: 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  color: oklch(0.97 0 0);
+  text-shadow: 0 2px 10px oklch(0 0 0 / 0.8);
+}
+
+.unbox__logo:not([hidden]) + .unbox__title {
+  display: none;
+}
+
+/* The lid is the box's front: the cover art, hinged on the left. */
+.unbox__lid {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  transform-origin: left center;
+  backface-visibility: hidden;
+  background: color-mix(in oklch, var(--accent) 30%, oklch(0.22 0 0));
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.12);
+}
+
+.unbox__front {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* The shrink-wrap: a gloss across the front that catches the light, then
+   slides off. */
+.unbox__wrap {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 30%, oklch(1 0 0 / 0.5) 45%, oklch(1 0 0 / 0.1) 52%, transparent 62%),
+    linear-gradient(180deg, oklch(1 0 0 / 0.1), transparent 40%);
+  background-size: 260% 100%, 100% 100%;
+  background-position: 120% 0, 0 0;
+}
+
+#unbox.is-playing .unbox__box {
+  animation:
+    unbox-arrive 560ms var(--ease) both,
+    unbox-set-down 520ms cubic-bezier(0.5, 0, 0.75, 0) 1800ms both;
+}
+
+#unbox.is-playing .unbox__wrap {
+  animation: unbox-wrap 620ms ease-in-out 480ms both;
+}
+
+#unbox.is-playing .unbox__lid {
+  animation: unbox-lid 700ms cubic-bezier(0.5, 0, 0.2, 1) 1080ms both;
+}
+
+#unbox.is-playing .unbox__cart {
+  animation: unbox-lift 640ms var(--ease) 1640ms both;
+}
+
+#unbox.is-playing {
+  animation: unbox-out 380ms ease-in 2300ms both;
+}
+
+@keyframes unbox-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.9) rotateX(8deg);
+  }
+}
+
+@keyframes unbox-wrap {
+  0% {
+    background-position: 120% 0, 0 0;
+    opacity: 1;
+  }
+  60% {
+    background-position: -20% 0, 0 0;
+    opacity: 1;
+  }
+  100% {
+    background-position: -20% 0, 0 0;
+    opacity: 0;
+    transform: translate(18%, -10%) rotate(-4deg);
+  }
+}
+
+@keyframes unbox-lid {
+  to {
+    transform: rotateY(-118deg);
+    filter: brightness(0.55);
+  }
+}
+
+@keyframes unbox-lift {
+  to {
+    transform: translateY(-16%) scale(1.12);
+  }
+}
+
+/* The empty box drops away beneath the cartridge as it rises. */
+@keyframes unbox-set-down {
+  to {
+    transform: translateY(6%) scale(0.97);
+    box-shadow: 0 10px 20px -18px oklch(0 0 0 / 0.9);
+  }
+}
+
+@keyframes unbox-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Memory card — the card as hardware, and its saves on a track round it
+   ==========================================================================
+   A mode of the launcher, in its language, staged like a console's card
+   browser: the card hovers over the middle of a dark room, the saves stand on
+   a circular track on the floor round it, and the chosen one is at the front,
+   stepped forward and lit. memcard-scene.js sets every transform and the
+   per-save --focus, --shade and --fade; this sheet says what things look like.
+
+   Light is depth and focus, never decoration: the room is lit from above, the
+   floor catches a pool where the chosen save stands, saves round the curve
+   fall into shade. No glow round anything (the No Halo Rule). */
+
+#memcard {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  overflow: hidden;
+  color: var(--ink);
+  /* A dark room, a little blue at the back wall and near-black at the floor. */
+  background: linear-gradient(
+    oklch(0.165 0.03 262) 0%,
+    oklch(0.125 0.02 262) 48%,
+    oklch(0.095 0.006 260) 100%
+  );
+  animation: fade 240ms var(--ease) both;
+}
+
+.mc__head {
+  /* Each part is pinned to its row: the capacity bar is hidden on a drive
+     that reports no size, and auto-placement would then slide the stage into
+     its row, where it has no height. */
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 0 22px;
+}
+
+#mc-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  font-stretch: 104%;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#mc-close {
+  position: relative;
+  flex: none;
+}
+
+/* How full the card is. */
+.mc__capacity {
+  grid-row: 2;
+  position: relative;
+  z-index: 2;
+  padding: 8px 22px 0;
+}
+
+.mc__bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hairline-soft);
+  overflow: hidden;
+}
+
+.mc__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ink-2);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 400ms var(--ease);
+}
+
+.mc__cap {
+  margin: 6px 0 0;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A save's state in a shape as well as a colour: circle in step, diamond
+   newer on one side, square changed on both, ring nothing to do yet. */
+.lamp {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+}
+
+.lamp[data-tone="warn"] {
+  background: oklch(0.82 0.15 80);
+  transform: rotate(45deg);
+}
+
+.lamp[data-tone="bad"] {
+  background: var(--danger);
+}
+
+.lamp[data-tone="good"] {
+  border-radius: 50%;
+  background: var(--good);
+}
+
+.lamp[data-tone="muted"] {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3);
+}
+
+/* --- The stage ------------------------------------------------------------ */
+
+.mc__scene {
+  grid-row: 3;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  perspective: 980px;
+  perspective-origin: 50% 32%;
+  /* The pointer tilts the card; nothing here is dragged. */
+  touch-action: pan-y;
+}
+
+/* Everything in 3D hangs off one point, a little below the middle of the
+   stage, scaled from the 420 by 340 the scene is drawn at (--s). */
+.mc__world {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  transform: scale(var(--s, 1)) rotateX(-11deg);
+}
+
+/* The floor the saves stand on: a dark disc, lit where the chosen one stands
+   at the front, fading into the room at its edge. */
+.mc__floor {
+  position: absolute;
+  left: -300px;
+  top: -300px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  transform: translateY(90px) rotateX(90deg);
+  background:
+    radial-gradient(closest-side at 50% 79%, oklch(0.7 0.03 75 / 0.26), transparent 62%),
+    radial-gradient(closest-side, oklch(0.25 0.03 262 / 0.95), oklch(0.17 0.025 262 / 0.7) 66%, transparent);
+  pointer-events: none;
+}
+
+.mc__track {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform-style: preserve-3d;
+}
+
+/* One save: a slot on the track that memcard-scene.js moves, holding a case. */
+.mc__block {
+  position: absolute;
+  left: -42px;
+  top: -30px;
+  width: 84px;
+  height: 120px;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  outline: none;
+}
+
+.mc__block[aria-selected="true"] {
+  cursor: default;
+}
+
+/* Under the pointer, a save round the curve comes half out of the shade:
+   that is the one a click will bring to the front. */
+.mc__block:hover .mc__face::after {
+  opacity: calc(var(--shade, 0) * 0.45);
+}
+
+/* --- A game case ---------------------------------------------------------- */
+
+.mc__case {
+  --w: 84px;
+  --h: 120px;
+  --d: 14px;
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.mc__face {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  backface-visibility: hidden;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  opacity: var(--fade, 1);
+}
+
+/* The room's light: faces round the curve fall into shade. An overlay, not a
+   filter, because a filter would flatten the box it is on. */
+.mc__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: oklch(0.05 0.01 262);
+  opacity: var(--shade, 0);
+  pointer-events: none;
+}
+
+.mc__face--front,
+.mc__face--back {
+  inset: 0;
+  border-radius: 2px;
+  background: var(--art, none) center / cover no-repeat,
+    color-mix(in oklch, var(--accent) 24%, var(--panel));
+  box-shadow: inset 0 0 0 1px var(--hairline-soft);
+}
+
+.mc__face--front {
+  transform: translateZ(calc(var(--d) / 2));
+}
+
+/* The chosen case catches the light across its cover. */
+.mc__face--front::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, oklch(1 0 0 / 0.16), transparent 42%);
+  opacity: var(--focus, 0);
+  pointer-events: none;
+}
+
+.mc__face--back {
+  transform: rotateY(180deg) translateZ(calc(var(--d) / 2));
+  filter: brightness(0.45);
+}
+
+.mc__face--left,
+.mc__face--right {
+  top: 0;
+  left: calc(50% - var(--d) / 2);
+  width: var(--d);
+  height: var(--h);
+  background: linear-gradient(90deg, var(--panel), var(--shell));
+}
+
+.mc__face--left {
+  transform: rotateY(-90deg) translateZ(calc(var(--w) / 2));
+}
+
+.mc__face--right {
+  transform: rotateY(90deg) translateZ(calc(var(--w) / 2));
+  background: var(--sunk);
+}
+
+/* The spine, with the game's name running down it. */
+.mc__face--left span {
+  max-height: calc(var(--h) - 12px);
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: var(--d);
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+
+.mc__face--top,
+.mc__face--bottom {
+  top: calc(50% - var(--d) / 2);
+  left: 0;
+  width: var(--w);
+  height: var(--d);
+  background: var(--shell);
+}
+
+.mc__face--top {
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+}
+
+.mc__face--bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--h) / 2));
+}
+
+/* A save that asks for something says so on its cover, readable from the
+   far side of the track. */
+.mc__case-lamp {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  outline: 2px solid oklch(0.1 0.01 262 / 0.85);
+}
+
+/* The chosen save: at the front, forward, lit, and ringed in the accent so
+   the selection is a border and a place, never only light. */
+.mc__block[aria-selected="true"] .mc__face--front {
+  box-shadow: inset 0 0 0 2px var(--accent), 0 0 0 1px oklch(0 0 0 / 0.5);
+}
+
+.mc__block:focus-visible .mc__face--front {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* The shadow it stands in, a hair above the floor so the two never fight. */
+.mc__shadow {
+  position: absolute;
+  left: -14%;
+  top: calc(var(--h) - 18px);
+  width: 128%;
+  height: 32px;
+  transform: rotateX(90deg);
+  background: radial-gradient(closest-side, oklch(0 0 0 / 0.75), transparent);
+  opacity: var(--fade, 1);
+  pointer-events: none;
+}
+
+/* --- The card ------------------------------------------------------------- */
+
+/* A slab of smoked plastic about the proportions of a console card, hovering
+   over the middle of the track. Its colours are its own, not the theme's: it
+   is an object in the room. */
+.mcx {
+  position: absolute;
+  left: -50px;
+  top: -158px;
+  width: 100px;
+  height: 130px;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.mcx__slab {
+  --w: 100px;
+  --h: 130px;
+  --d: 12px;
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.mcx__face {
+  position: absolute;
+  backface-visibility: hidden;
+  opacity: var(--fade, 1);
+}
+
+.mcx__face--front,
+.mcx__face--back {
+  inset: 0;
+  border-radius: 7px 7px 4px 4px;
+}
+
+.mcx__face--front {
+  transform: translateZ(calc(var(--d) / 2));
+  overflow: hidden;
+  background:
+    /* moulded grain */
+    repeating-linear-gradient(0deg, oklch(1 0 0 / 0.015) 0 1px, transparent 1px 3px),
+    /* lit from above and to the left */
+    linear-gradient(158deg, oklch(0.34 0.03 258) 0%, oklch(0.22 0.025 260) 46%, oklch(0.16 0.02 262) 100%);
+  box-shadow:
+    inset 1px 1px 0 oklch(1 0 0 / 0.22),
+    inset -1px -1px 0 oklch(0 0 0 / 0.55),
+    inset 0 0 0 4px oklch(0 0 0 / 0.08);
+}
+
+.mcx__face--back {
+  transform: rotateY(180deg) translateZ(calc(var(--d) / 2));
+  background: oklch(0.15 0.02 262);
+}
+
+.mcx__face--left,
+.mcx__face--right {
+  top: 4px;
+  left: calc(50% - var(--d) / 2);
+  width: var(--d);
+  height: calc(var(--h) - 8px);
+  background: linear-gradient(90deg, oklch(0.2 0.022 262), oklch(0.27 0.025 258) 50%, oklch(0.18 0.02 262));
+}
+
+.mcx__face--left {
+  transform: rotateY(-90deg) translateZ(calc(var(--w) / 2));
+}
+
+.mcx__face--right {
+  transform: rotateY(90deg) translateZ(calc(var(--w) / 2));
+  filter: brightness(0.7);
+}
+
+.mcx__face--top,
+.mcx__face--bottom {
+  top: calc(50% - var(--d) / 2);
+  left: 6px;
+  width: calc(var(--w) - 12px);
+  height: var(--d);
+}
+
+.mcx__face--top {
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+  background: oklch(0.3 0.028 258);
+}
+
+/* The connector along the bottom edge: gold pins in a dark slot. */
+.mcx__face--bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--h) / 2));
+  background:
+    repeating-linear-gradient(90deg, oklch(0.74 0.11 82) 0 3px, oklch(0.14 0.01 262) 3px 7px)
+      center / calc(100% - 16px) 50% no-repeat,
+    oklch(0.14 0.01 262);
+}
+
+/* The grip moulded across the top. */
+.mcx__grip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 9px;
+  height: 18px;
+  background: repeating-linear-gradient(
+    180deg,
+    oklch(1 0 0 / 0.12) 0 1px,
+    oklch(0 0 0 / 0.35) 1px 2px,
+    transparent 2px 4px
+  );
+  border-radius: 2px;
+}
+
+/* The label, set into the face. */
+.mcx__label {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 34px;
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px 0 14px;
+  border-radius: 3px;
+  background: linear-gradient(oklch(0.15 0.012 262), oklch(0.12 0.01 262));
+  box-shadow: inset 0 1px 2px oklch(0 0 0 / 0.7), 0 1px 0 oklch(1 0 0 / 0.1);
+}
+
+.mcx__stripe {
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.mcx__word {
+  font-size: 11px;
+  font-weight: 800;
+  font-stretch: 110%;
+  letter-spacing: 0.14em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: oklch(0.88 0.01 260);
+}
+
+.mcx__size {
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: oklch(0.68 0.015 260);
+}
+
+.mcx__size:empty {
+  display: none;
+}
+
+/* The arrow that says which way it goes in. */
+.mcx__arrow {
+  position: absolute;
+  left: calc(50% - 7px);
+  bottom: 22px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid oklch(0.12 0.015 262 / 0.9);
+  filter: drop-shadow(0 1px 0 oklch(1 0 0 / 0.12));
+}
+
+/* The slots the pins sit behind, seen from the front. */
+.mcx__teeth {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 7px;
+  border-radius: 1px;
+  background: repeating-linear-gradient(90deg, oklch(0.08 0.01 262) 0 4px, oklch(0.2 0.02 260) 4px 7px);
+}
+
+/* Its shadow, cast far down onto the floor under it. */
+.mcx__shadow {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 205px;
+  height: 46px;
+  transform: rotateX(90deg);
+  background: radial-gradient(closest-side, oklch(0 0 0 / 0.55), transparent);
+  opacity: var(--fade, 1);
+}
+
+/* --- Stepping, and the empty card ----------------------------------------- */
+
+/* Either side of the front of the track, for a mouse. */
+.mc__step {
+  position: absolute;
+  top: 62%;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  transform: translateY(-50%);
+}
+
+.mc__step--prev {
+  left: 10px;
+}
+
+.mc__step--next {
+  right: 10px;
+}
+
+.mc__step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+#memcard.is-empty .mc__step {
+  display: none;
+}
+
+.mc__empty {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 22%;
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+
+/* --- The panel: the chosen save, and what to do --------------------------- */
+
+.mc__panel {
+  grid-row: 4;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  /* Fixed, so the stage above does not grow and shrink, and the whole scene
+     jump, as saves with more or fewer details are chosen. Room for a two-line
+     title, two lines of details and the buttons. */
+  height: 212px;
+  padding: 12px 20px 18px 22px;
+  border-top: 1px solid var(--hairline-soft);
+  background: linear-gradient(oklch(0.11 0.008 260 / 0.82), oklch(0.095 0.006 260));
+}
+
+#memcard:not(.has-block) .mc__panel {
+  display: none;
+}
+
+.mc__title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.mc__count {
+  flex: none;
+  margin-left: auto;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.mc__game {
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  font-stretch: 104%;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.mc__state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.mc__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: "Spline Sans Mono", ui-monospace, monospace;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.mc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 6px;
+}
+
+.mc__actions .btn {
+  position: relative;
+  flex: 1 1 140px;
+  max-width: 260px;
+  height: 42px;
+  padding: 0 12px;
+}
+
+.mc__more {
+  display: flex;
+  gap: 4px 16px;
+  margin-left: auto;
+}
+
+.mc__link {
+  appearance: none;
+  position: relative;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mc__link:hover,
+.mc__link:focus-visible {
+  color: var(--ink);
+}
+
+.mc__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mc__delete:hover,
+.mc__delete.is-armed {
+  color: var(--danger);
+}
+
+/* Pad badges sit on the corner of whatever they press. */
+.mc__actions .pad-badge,
+#mc-close .pad-badge {
+  top: -7px;
+  right: -7px;
+}
+
+.mc__link .pad-badge {
+  top: -8px;
+  right: -20px;
+}
+
+/* A presses the suggested copy; when both are offered it presses neither. */
+.mc__actions .btn:not(.is-suggested) .pad-badge {
+  display: none;
+}
+
+/* --- Without 3D: the track laid flat, still every save in reach ----------- */
+
+.mc__scene.is-flat .mc__world {
+  transform: scale(var(--s, 1));
+}
+
+.mc__scene.is-flat .mc__floor,
+.mc__scene.is-flat .mc__shadow,
+.mc__scene.is-flat .mc__face:not(.mc__face--front),
+.mc__scene.is-flat .mcx__face:not(.mcx__face--front) {
+  display: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* The shortcuts, said once, where someone looking for more will look. */
+.sheet-keys {
+  margin: 14px 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}

@@ -1,0 +1,414 @@
+/* ==========================================================================
+   Retro — a wood-grain television with the screen set into it.
+
+   Art slots: a hero on the screen, covers in the list, no logo. The frame is
+   moulded plastic and the screen is the only lit thing in it.
+
+   The one skin laid out by **position rather than flow**, because it is a
+   fixed-size appliance: the screen, the title strip, the knobs and the two
+   buttons each have a place on the cabinet and none of them move. Note that
+   `#face` is not the artwork — `#stage` lives inside it — so the screen is
+   drawn on `#skin-panel` and the picture is `#plate` inset on top of that.
+   ========================================================================== */
+
+:root {
+  --skin-width: 400;
+  --skin-height: 660;
+
+  --skin-art: hero;
+  --skin-row-art: grid;
+  --skin-logo: none;
+
+  --accent: #f59e0b;
+  --accent-ink: #1a0f00;
+  --radius: 4px;
+
+  --tv-amber: #f59e0b;
+  --tv-amber-soft: rgb(245 158 11 / 0.65);
+  --tv-screen: #080808;
+  --tv-bezel: #7a6040;
+  --tv-font: "Courier New", ui-monospace, Consolas, monospace;
+}
+
+/* The cabinet: moulded plastic, lit from the top left, standing on a shadow. */
+#card {
+  background: linear-gradient(145deg, #d4c4a8 0%, #b8a882 40%, #9a8a6a 100%);
+  color: #fff8e8;
+  font-family: var(--tv-font);
+  border-radius: 22px;
+  box-shadow:
+    inset 3px 3px 8px rgb(255 255 255 / 0.45),
+    inset -3px -3px 8px rgb(0 0 0 / 0.35),
+    10px 14px 32px rgb(0 0 0 / 0.75);
+}
+
+#face {
+  border-radius: 22px;
+}
+
+/* ------------------------------------------------------------ the screen
+
+   Set into the cabinet, with the glass stopping well short of the edges. */
+
+#skin-panel {
+  inset: 18px 18px 190px;
+  background: var(--tv-screen);
+  border: 2px solid var(--tv-bezel);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 24px rgb(0 0 0 / 0.9),
+    0 0 12px rgb(245 158 11 / 0.4);
+}
+
+/* The picture fills the top of the glass only; the list is under it. */
+#plate {
+  inset: 20px 20px auto;
+  height: 194px;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+}
+
+#plate img {
+  filter: brightness(0.85) saturate(1.1);
+}
+
+#scrim-top {
+  display: none;
+}
+
+#scrim-bottom {
+  inset: 20px 20px auto;
+  height: 194px;
+  border-radius: 6px 6px 0 0;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0) 40%, rgb(0 0 0 / 0.85) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 2px,
+      rgb(0 0 0 / 0.18) 2px 4px
+    );
+}
+
+#cart-mark {
+  display: none;
+}
+
+/* --------------------------------------------------------- the screen bar */
+
+#chrome {
+  height: 34px;
+  padding: 8px 22px 0 0;
+  align-items: flex-start;
+}
+
+#chrome-actions {
+  opacity: 1;
+  transform: none;
+  gap: 5px;
+}
+
+#chrome .icon-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+  background: #1a1a1a;
+  border: 1px solid var(--tv-amber-soft);
+  color: var(--tv-amber);
+}
+
+#chrome .icon-btn:hover {
+  background: #2a2010;
+  border-color: var(--tv-amber);
+}
+
+#chrome .icon-btn--close:hover {
+  background: #7a1a0f;
+  border-color: #ff6b52;
+  color: #ffd0c4;
+}
+
+/* -------------------------------------------------------------- the layout */
+
+#stage {
+  position: absolute;
+  inset: 0;
+  margin-top: 0;
+  padding: 0;
+}
+
+/* The channel name, over the picture. */
+#eyebrow {
+  position: absolute;
+  top: 26px;
+  left: 28px;
+  right: 92px;
+  margin: 0;
+  font-family: var(--tv-font);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--tv-amber);
+  text-shadow: 0 0 6px rgb(245 158 11 / 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The rest of the glass, under the picture. */
+#game-list {
+  position: absolute;
+  top: 214px;
+  left: 20px;
+  right: 20px;
+  bottom: 192px;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  background: #080808;
+  border-radius: 0 0 6px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(245 158 11 / 0.3) transparent;
+}
+
+.game-row {
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: transparent;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid rgb(255 255 255 / 0.04);
+  border-radius: 0;
+}
+
+.game-row:hover {
+  background: rgb(245 158 11 / 0.05);
+}
+
+.game-row[aria-selected="true"] {
+  background: rgb(245 158 11 / 0.1);
+  border-left-color: var(--tv-amber);
+  box-shadow: none;
+}
+
+.game-row__cover {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.game-row[aria-selected="true"] .game-row__cover {
+  border-color: var(--tv-amber);
+}
+
+.game-row__cover--empty {
+  background: #141414;
+  color: var(--tv-amber);
+  font-size: 11px;
+}
+
+.game-row__title {
+  font-family: var(--tv-font);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  color: rgb(255 255 255 / 0.45);
+}
+
+.game-row[aria-selected="true"] .game-row__title {
+  color: var(--tv-amber);
+  text-shadow: 0 0 8px rgb(245 158 11 / 0.6);
+}
+
+.game-row__meta {
+  font-family: var(--tv-font);
+  font-size: 9px;
+  color: rgb(255 255 255 / 0.22);
+}
+
+/* The channel-lock lamp on each row. */
+.game-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a2010;
+  opacity: 1;
+}
+
+.game-row[aria-selected="true"] .game-row__dot {
+  background: var(--tv-amber);
+  box-shadow: 0 0 7px rgb(245 158 11 / 0.7);
+}
+
+/* ------------------------------------------------- the strip under the glass
+
+   Type behind a window, which is where a set of this age printed the channel
+   rather than over the picture. */
+
+#game-title {
+  position: absolute;
+  left: 20px;
+  right: 134px;
+  bottom: 118px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 12px;
+  font-family: var(--tv-font);
+  --title-size: 11px;
+  --title-stretch: 100%;
+  --title-tracking: 0.08em;
+  --title-leading: 1.3;
+  font-weight: 700;
+  color: #fff8e8;
+  text-shadow: 0 0 8px rgb(245 158 11 / 0.5);
+  background: #060606;
+  border: 1px solid rgb(122 96 64 / 0.25);
+  border-radius: 4px;
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#notice {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 96px;
+  padding: 0;
+  font-size: 9px;
+  color: #4a3a2a;
+}
+
+/* --------------------------------------------------- the knobs and the lamps
+
+   Drawn on the layer above the stage, beside the title strip. Nothing here is
+   a control — the launcher has two buttons and they are both below. A
+   television of this age had a row of them anyway. */
+
+#skin-chrome {
+  inset: auto 20px 118px auto;
+  width: 104px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#skin-chrome::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #8a6a4a, #4a3a2a);
+  border: 2px solid rgb(0 0 0 / 0.55);
+  box-shadow: 2px 3px 5px rgb(0 0 0 / 0.65);
+}
+
+#skin-chrome::after {
+  content: "";
+  width: 10px;
+  height: 34px;
+  background:
+    radial-gradient(circle at 5px 5px, var(--tv-amber) 4px, transparent 4.5px),
+    radial-gradient(circle at 5px 17px, #f97316 4px, transparent 4.5px),
+    radial-gradient(circle at 5px 29px, #3a2a0f 4px, transparent 4.5px);
+  filter: drop-shadow(0 0 5px rgb(245 158 11 / 0.55));
+}
+
+/* --------------------------------------------------------------- the buttons */
+
+#button-row {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 22px;
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Hardware: a lit top edge and a body the button sinks into when pressed. */
+.btn--play,
+.btn--eject {
+  font-family: var(--tv-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  border: 2px solid;
+  color: #ffffff;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.btn--play {
+  flex: 1;
+  height: 42px;
+  background: linear-gradient(180deg, #d4a054 0%, #8b6230 100%);
+  border-color: #5a3f1f;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 4px 0 rgb(0 0 0 / 0.45);
+}
+
+.btn--eject {
+  width: 74px;
+  height: 42px;
+  background: linear-gradient(180deg, #4a8c7a 0%, #2d6655 100%);
+  border-color: #1a4438;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.15),
+    0 4px 0 rgb(0 0 0 / 0.45);
+}
+
+.btn--play:active:not(:disabled),
+.btn--eject:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.5), 0 1px 0 rgb(0 0 0 / 0.45);
+}
+
+.btn:disabled {
+  background: #8a8068;
+  border-color: #6a6048;
+  color: rgb(255 255 255 / 0.4);
+  box-shadow: none;
+}
+
+.btn--play.is-launching {
+  background: var(--tv-amber);
+  border-color: #a8690a;
+  color: #1a0f00;
+}
+
+/* Dark type on a light cabinet needs a dark ring. */
+.btn:focus-visible,
+body.is-gamepad :focus {
+  outline: 2px solid #3a2a1a;
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ the rest */
+
+#slot,
+#cover-placeholder {
+  background: var(--tv-screen);
+  color: var(--tv-amber-soft);
+}
+
+#placeholder-initials {
+  color: var(--tv-amber);
+}
+
+.pad-badge {
+  background: var(--tv-amber);
+  color: #1a0f00;
+}
